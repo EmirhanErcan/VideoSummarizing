@@ -2,48 +2,77 @@
 import gradio as gr
 import os
 import requests
+import shutil
+from processing import process_video
+from os.path import dirname, realpath, join
 
-# Step 2: Define User Interaction Function
-def summarize_video (video_path):
-    # Check file extension before sending to API
-    extension = os.path.splitext(video_path)[1].lower()
-    valid_extensions = (".mp4")  # Add your supported video formats
-    if extension not in valid_extensions:
-        return "Error: Only video files are supported. Please upload a video."
+uploaded_videos_count = 0
 
-    # Send video data (path) to the Flask API endpoint
-    # Assuming the endpoint URL is http://your-api-server:port/summarize
-    url = "http://your-api-server:port/summarize"
-    files = {"video": open(video_path, "rb")}
-    response = requests.post(url, files = files)
+# -------- file paths --------d
 
-    # Check for successful response and handle errors
-    if response.status_code == 200:
-        # Read the shortened video data from the response
-        summarize_video = response.content
+# Get the current directory
+current_dir = os.getcwd()
 
-        # You can potentially use OpenCV (cv2) here to decode the video data
-        # if necessary (depending on the format returned by the API)
-        # ... (your video processing logic cv2) ...
+# Get the path to the "securitycam.mp4" file in the current directory
+uploaded_video_folder = os.path.join(current_dir, "GradioSave")
 
-        # Display the shortened video using Gradio video component
-        return summarize_video
-    else:
-        # Handle API call error
-        return f"Error: API call failed. Status code: {response.status_code}"
+# video list in the GradioSave folder
+video_files = os.listdir(uploaded_video_folder)
 
-    # Note: Replace "http://your-api-server:port/summarize" with your actual API endpoint URL
+# Filter video files
+video_files = [file for file in video_files if file.endswith(('.mp4'))]
 
-# Step 3: Create Gradio Interface
-interface = gr.Interface(
-    fn= summarize_video,
-    inputs= "video",
-    outputs= "video",
-    title= "Video Summarization with Smart Search Ability!",
-    js= "myjs.js",
-    css= "style.css",
-    description= """<p>This tool provides you to get important parts of your long video.</p><p>You can get specific things by using smart search ability.</p><p>For example, movements of a man who wear red cloth can be searched and tool gives the exact time.</p>"""
-)
+# sorting videos by their get time
+# video_files.sort(key=lambda x: os.path.getmtime(os.path.join(uploaded_video_folder, x)))
+last_video = video_files[-1]
 
-# Step 4: Launching the Application
-interface.launch(share= True, allowed_paths=["background.jpg"])
+# output directory
+output_video_folder = os.path.join(current_dir, "Results")
+
+output_videos = os.listdir(uploaded_video_folder)
+
+# output_videos.sort(key=lambda x: os.path.getmtime(os.path.join(output_video_folder, x)))
+
+last_result = output_videos[-1]
+
+# ------------------------
+
+def gradioApp(video_path):
+    output_video_path = process_video(video_path, output_video_folder)
+    return output_video_path
+
+
+# -------------------------------------
+def upload_file(filepath):
+    global uploaded_videos_count
+
+    # Dosyayı kalıcı olarak saklamak istediğiniz klasörü belirleyin
+    save_folder = "GradioSave"
+    
+    # Dosyanın hedef klasöre kopyalanması
+    uploaded_file_path = filepath
+    uploaded_videos_count += 1
+
+    # Kullanıcının yüklediği dosyayı hedef klasöre kopyalayın
+    save_path = os.path.join(save_folder, f"video{uploaded_videos_count}.mp4")
+    shutil.copy(uploaded_file_path, save_path)
+
+
+# ------------------------------------
+
+with gr.Blocks(css= "style2.css", js= "myjs.js") as demo:
+    gr.Markdown("""<p>This tool provides you to get important parts of your long video.</p><p>You can get specific things by using smart search ability.</p><p>For example, movements of a man who wear red cloth can be searched and tool gives the exact time.</p>""")
+    with gr.Row():
+        with gr.Column():
+            u = gr.UploadButton("Upload a file", file_count="single")
+        with gr.Column():
+            outputVideo = gr.Video(label= "Summarized Video")
+    with gr.Row():
+        with gr.Column():
+            btn = gr.Button("Submit")
+    
+    u.upload(upload_file, u)
+    btn.click(gradioApp, inputs=[u], outputs= outputVideo)
+   
+
+demo.launch(share=True)

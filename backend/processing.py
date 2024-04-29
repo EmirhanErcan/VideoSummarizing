@@ -1,6 +1,7 @@
 import cv2
 from detection import detect_objects
 from tracking import update_tracker
+import os
 
 def process_video(video_path, output_path):
     """Process input video and save the output video."""
@@ -9,7 +10,10 @@ def process_video(video_path, output_path):
     frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = cap.get(cv2.CAP_PROP_FPS)
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
+    
+    # Define the output video path in the specified folder
+    output_video_path = os.path.join(output_path, "output_" + os.path.basename(video_path))
+    out = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height))
 
     track_detection_times = {}
 
@@ -27,6 +31,8 @@ def process_video(video_path, output_path):
 
     cap.release()
     out.release()
+
+    return output_video_path  # Return the path of the saved output video
 
 def frame_contains_humans(frame, min_confidence=0.5):
     # Detect humans in the frame using your YOLO model
