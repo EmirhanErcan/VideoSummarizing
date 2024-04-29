@@ -26,6 +26,10 @@ def update_tracker(results, frame, fps, track_detection_times, cap):
                 track_detection_times[track_id] = detected_time
 
             detection_time = track_detection_times[track_id]
+            hour = int(detection_time / 3600)
+            minute = int((detection_time % 3600) / 60)
+            second = int(detection_time % 60)
+
 
             x1, y1, x2, y2 = track.to_tlbr()
             w = x2 - x1
@@ -40,7 +44,7 @@ def update_tracker(results, frame, fps, track_detection_times, cap):
                 color = (0, 255, 0)  # Green
 
             cv2.rectangle(og_frame, (int(x1), int(y1)), (int(x1 + w), int(y1 + h)), color, 2)
-            cv2.putText(og_frame, f"Person-{track_id} ({detection_time:.1f}s)", (int(x1) + 10, int(y1) - 5),
+            cv2.putText(og_frame, f"Person-{track_id} ({hour}h {minute}m {second}s)", (int(x1) + 10, int(y1) - 5),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
 
     return og_frame
