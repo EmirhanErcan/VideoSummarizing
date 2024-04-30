@@ -1,50 +1,42 @@
 /* body */
 .gradio-container {
-    background: url('file=background.jpg'); 
-    background-size: cover; 
+    background: rgb(32, 34, 34);
     max-width: 100% !important;
 }
 
-/* Video Summarization with Smart Search Ability! */
-h1 {
-    text-align: center !important;
-    display: block;
-    color: #ffffff;
-}
-
-/* description */
-#component-4 {
-    text-align: center !important;
+#component-1 {
     margin-bottom: 50px;
 }
 
-#component-4 p {
-    color: #ffffff;
+#component-8 {
+    margin-top: 50px;
 }
 
-/*video upload and video output parts*/
-#component-6, #component-11 {
-    background-color: #f0b222;
+#component-10 {
+    width: 50%;
+    margin: 0 auto;
 }
 
-/*video upload iç kısmı*/
-#component-1, #component-2 {
-    background-color: #3c3c3c;
+button.lg.svelte-cmf5ev {
+    width: 50%;
+    display: block;
+    margin: 0 auto;
 }
 
-/*Upload ve output içindeki yazı ve ikon*/
-.svelte-b0hvie, .svelte-1oiin9d{
-    color: yellow;
+/* Description yazısı :
+This tool provides you to get important parts of your long video.
+
+You can get specific things by using smart search ability.
+
+For example, movements of a man who wear red cloth can be searched and tool gives the exact time.
+*/
+span.md.svelte-1k4ye9u {
+    text-align: center;
 }
 
-/* Submit button */
-.svelte-cmf5ev {
-    color: #3c3c3c;
-}
-
-/* output video gri backgroundu kapsayan kısım (bunun yükseklik değeri pixel olmamalı. Relative olmuyor pixel verirsen) */
-#component-2 {
-    height: 267.8px;
+span.md.svelte-1k4ye9u p {
+    font-size: 20px;
+    color: white;
 }
 
 

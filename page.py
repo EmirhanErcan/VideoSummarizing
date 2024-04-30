@@ -65,14 +65,16 @@ with gr.Blocks(css= "style.css", js= "myjs.js") as demo:
     with gr.Row():
         with gr.Column():
             u = gr.UploadButton("Upload a file", file_count="single")
-        with gr.Column():
-            outputVideo = gr.Video(label= "Summarized Video")
     with gr.Row():
         with gr.Column():
             btn = gr.Button("Submit")
+    with gr.Row():    
+        with gr.Column():
+            outputVideo = gr.Video(label= "Summarized Video")
+
     
     u.upload(upload_file, u)
     btn.click(gradioApp, inputs=[u], outputs= outputVideo)
    
 
-demo.launch(share=True)
+demo.launch(share=False)

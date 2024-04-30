@@ -14,7 +14,7 @@ function createGradioAnimation() {
                 var letter = document.createElement('span');
                 letter.style.opacity = '0';
                 letter.style.transition = 'opacity 0.5s';
-                letter.style.color = '#d6ca1c';
+                letter.style.color = '#9ECAFF';
                 letter.innerText = text[i];
 
                 container.appendChild(letter);
