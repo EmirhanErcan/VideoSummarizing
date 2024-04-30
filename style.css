@@ -1,0 +1,51 @@
+/* body */
+.gradio-container {
+    background: url('file=background.jpg'); 
+    background-size: cover; 
+    max-width: 100% !important;
+}
+
+/* Video Summarization with Smart Search Ability! */
+h1 {
+    text-align: center !important;
+    display: block;
+    color: #ffffff;
+}
+
+/* description */
+#component-4 {
+    text-align: center !important;
+    margin-bottom: 50px;
+}
+
+#component-4 p {
+    color: #ffffff;
+}
+
+/*video upload and video output parts*/
+#component-6, #component-11 {
+    background-color: #f0b222;
+}
+
+/*video upload iç kısmı*/
+#component-1, #component-2 {
+    background-color: #3c3c3c;
+}
+
+/*Upload ve output içindeki yazı ve ikon*/
+.svelte-b0hvie, .svelte-1oiin9d{
+    color: yellow;
+}
+
+/* Submit button */
+.svelte-cmf5ev {
+    color: #3c3c3c;
+}
+
+/* output video gri backgroundu kapsayan kısım (bunun yükseklik değeri pixel olmamalı. Relative olmuyor pixel verirsen) */
+#component-2 {
+    height: 267.8px;
+}
+
+
+
