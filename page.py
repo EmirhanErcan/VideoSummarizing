@@ -1,10 +1,8 @@
 # Step 1: Import Libraries
 import gradio as gr
 import os
-import requests
 import shutil
 from processing import process_video
-from os.path import dirname, realpath, join
 
 uploaded_videos_count = 0
 
@@ -22,25 +20,16 @@ video_files = os.listdir(uploaded_video_folder)
 # Filter video files
 video_files = [file for file in video_files if file.endswith(('.mp4'))]
 
-# sorting videos by their get time
-# video_files.sort(key=lambda x: os.path.getmtime(os.path.join(uploaded_video_folder, x)))
-last_video = video_files[-1]
-
 # output directory
 output_video_folder = os.path.join(current_dir, "Results")
 
-output_videos = os.listdir(uploaded_video_folder)
-
-# output_videos.sort(key=lambda x: os.path.getmtime(os.path.join(output_video_folder, x)))
-
-last_result = output_videos[-1]
 
 # ------------------------
 
 def gradioApp(video_path):
+    
     output_video_path = process_video(video_path, output_video_folder)
     return output_video_path
-
 
 # -------------------------------------
 def upload_file(filepath):
@@ -57,7 +46,6 @@ def upload_file(filepath):
     save_path = os.path.join(save_folder, f"video{uploaded_videos_count}.mp4")
     shutil.copy(uploaded_file_path, save_path)
 
-
 # ------------------------------------
 
 with gr.Blocks(css= "style.css", js= "myjs.js") as demo:
@@ -71,10 +59,19 @@ with gr.Blocks(css= "style.css", js= "myjs.js") as demo:
     with gr.Row():    
         with gr.Column():
             outputVideo = gr.Video(label= "Summarized Video")
-
+    with gr.Row():
+        with gr.Column():
+            radio = gr.Radio(["Red","Green","Blue"], label="Color", info="Human Cloth Color")
+    with gr.Row():
+        with gr.Column():
+            colorSubmit = gr.Button("Submit Color")
+    with gr.Row():    
+        with gr.Column():
+            colorFilterVideo = gr.Video(label= "Color Filtered Video")
     
     u.upload(upload_file, u)
-    btn.click(gradioApp, inputs=[u], outputs= outputVideo)
+    colorSubmit.click(gradioApp, inputs=[u], outputs=outputVideo) # Değişecek fonksiyon vb
+    btn.click(gradioApp, inputs=[u], outputs= colorFilterVideo)
    
 
-demo.launch(share=False)
+demo.launch(share=True)
