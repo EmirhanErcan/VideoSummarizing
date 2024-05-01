@@ -7,7 +7,6 @@ def green_screen():
     # image
     image = cv2.imread("input1.png")
     image = cv2.resize(image, (1280, 720))  # Resize to match frame dimensions
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
     # video
     cap = cv2.VideoCapture("ilk.mp4")
@@ -39,9 +38,9 @@ def green_screen():
         f = frame-res 
 
         # green_screen
-        green_screen = np.where(f==0, image, f)  
+        green_screen_video = np.where(f==0, image, f)  
 
-        out.write(cv2.cvtColor(green_screen, cv2.COLOR_BGR2RGB))
+        out.write(green_screen_video)
 
     cap.release()
     out.release()
