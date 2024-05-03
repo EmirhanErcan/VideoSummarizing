@@ -9,7 +9,7 @@ def process_video(video_path, output_path):
     frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = cap.get(cv2.CAP_PROP_FPS)
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fourcc = cv2.VideoWriter_fourcc(*'H264')
 
     # Define the output video path in the specified folder
     output_video_path = os.path.join(output_path, "output_" + os.path.basename(video_path))
