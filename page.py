@@ -70,8 +70,9 @@ with gr.Blocks(css= "style.css", js= "myjs.js") as demo:
             colorFilterVideo = gr.Video(label= "Color Filtered Video")
     
     u.upload(upload_file, u)
-    colorSubmit.click(gradioApp, inputs=[u], outputs=outputVideo) # Değişecek fonksiyon vb
-    btn.click(gradioApp, inputs=[u], outputs= colorFilterVideo)
+    btn.click(gradioApp, inputs=[u], outputs= outputVideo)
+    #colorSubmit.click(gradioApp, inputs=[u], outputs=outputVideo) # Değişecek fonksiyon vb
+    
    
 
 demo.launch(share=True)

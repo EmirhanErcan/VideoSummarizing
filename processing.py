@@ -14,7 +14,7 @@ def process_video(video_path, output_path):
     # Define the output video path in the specified folder
     output_video_path = os.path.join(output_path, "output_" + os.path.basename(video_path))
     out = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height))
-    color_counts = {}
+    track_colors = {} 
     track_detection_times = {}
 
 
@@ -28,7 +28,7 @@ def process_video(video_path, output_path):
         
         
         results = detect_objects(frame)
-        processed_frame = update_tracker(results, frame, fps, track_detection_times, cap, color_counts)
+        processed_frame = update_tracker(results, frame, fps, track_detection_times, cap, track_colors)
         out.write(cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB))
 
     cap.release()
