@@ -3,7 +3,7 @@ from detection import detect_objects
 from tracking import update_tracker
 import os
 
-def process_video(video_path, output_path):
+def process_video(video_path, output_path, colorFilter=None):
     """Process input video and save the output video."""
     cap = cv2.VideoCapture(video_path)
     frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -28,9 +28,11 @@ def process_video(video_path, output_path):
         
         
         results = detect_objects(frame)
-        processed_frame = update_tracker(results, frame, fps, track_detection_times, cap, track_colors)
-        out.write(cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB))
+        processed_frame = update_tracker(results, frame, fps, track_detection_times, cap, track_colors, colorFilter)
+        if processed_frame is not None:
+            out.write(cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB))
 
+    
     cap.release()
     out.release()
 

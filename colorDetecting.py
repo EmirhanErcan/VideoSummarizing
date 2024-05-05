@@ -1,90 +1,62 @@
 from ultralytics import YOLO
-import torch
-import cv2
 import numpy as np
+import cv2
+from PIL import Image
 
 model = YOLO('yolov8n-seg.pt')
 
-def detect_color(image_path):
+def detect_color(image):
 
-	#EXTRACT THE IMAGE START
-	predict = model.predict(image_path, save=False, classes=[0], save_txt=False)
+    predict = model.predict(image, save=False, classes=[0], conf=0.4, save_txt=False)
+     
+    human_mask = (predict[0].masks.data[0].cpu().numpy() * 255).astype("uint8")
+    
+    human_mask_resized = cv2.resize(human_mask, (image.shape[1], image.shape[0]))
+    
+    background_mask = cv2.bitwise_not(human_mask_resized)
+    
+    image[background_mask == 255] = [0, 0, 0]
+    
+    human_mask_binary = cv2.threshold(human_mask_resized, 127, 255, cv2.THRESH_BINARY)[1]
+    
+    human_color = cv2.bitwise_and(image, image, mask=human_mask_binary)
+    
+    input_image = human_color
 
-	# Extract human mask
-	human_mask = (predict[0].masks.data[0].cpu().numpy() * 255).astype("uint8")
+    color_ranges = [
+        ((94, 80, 2), (120, 255, 255)),
+        ((25, 52, 72), (102, 255, 255)),
+        ((136, 87, 111), (180, 255, 255))
+    ]
 
-	# Load original image
-	image = cv2.imread(image_path)
+    masks = []
+    areas = []
 
-	# Resize human mask to match the dimensions of the original image
-	human_mask_resized = cv2.resize(human_mask, (image.shape[1], image.shape[0]))
+    hsv_image = cv2.cvtColor(input_image, cv2.COLOR_BGR2HSV)
+    for lower, upper in color_ranges:
 
-	# Create mask for background (inverse of human mask)
-	background_mask = cv2.bitwise_not(human_mask_resized)
+        mask = cv2.inRange(hsv_image, np.array(lower), np.array(upper))
+        
+        masks.append(mask)
+        
+        contours, _ = cv2.findContours(mask.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        
+        total_area = 0
 
-	# Set background to black
-	image[background_mask == 255] = [0, 0, 0]
+        for contour in contours:
 
-	# Convert human mask to binary
-	human_mask_binary = cv2.threshold(human_mask_resized, 127, 255, cv2.THRESH_BINARY)[1]
+            area = cv2.contourArea(contour)
 
-	# Extract human's color
-	human_color = cv2.bitwise_and(image, image, mask=human_mask_binary)
-	# EXTRACT IMAGE END
+            total_area += area
 
+        areas.append(total_area)
 
-	# COLOR DETECTION START
-	input_image = human_color
+    max_area_index = areas.index(max(areas))
 
-	color_ranges = [
-		((94, 80, 2), (120, 255, 255)), # Blue
-		((25, 52, 72), (102, 255, 255)), # Green
-		((0, 50, 50), (10, 255, 255)) # Red
-	]
+    colors = ['Blue', 'Green', 'Red']
+    
+    max_color = colors[max_area_index]
 
-	# Create lists to store masks and areas
-	# masks -> color masks (lower and upper values interval)
-	# areas -> total count of pixels for each color
-	masks = []
-	areas = []
+    color_text = max_color
 
-	# converting the input image to HSV values from BGR values
-	hsv_image = cv2.cvtColor(input_image, cv2.COLOR_BGR2HSV)
-
-	# for:
-	# 1st loop:
-	# lower blue -> (94, 80, 2)
-	# upper blue -> (120, 255, 255)
-	# 2nd loop:
-	# lower green -> (25, 52, 72)
-	# upper green -> (102, 255, 255)
-	# 3rd loop:
-	# lower red -> (0, 50, 50)
-	# upper red -> (10, 255, 255)
-	for lower, upper in color_ranges:
-		
-		# creating masks for specific color intervals
-		mask = cv2.inRange(hsv_image, np.array(lower), np.array(upper))
-		
-		# append new mask to masks[] list
-		masks.append(mask)
-		
-		# Getting contour values from mask values
-		contours, _ = cv2.findContours(mask.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-		
-		# Calculate the area of contours and add them to the areas[]list
-		total_area = 0
-		for contour in contours:
-			area = cv2.contourArea(contour)
-			total_area += area
-		
-		# append the total area to areas[]list
-		areas.append(total_area)
-
-
-	max_area_index = areas.index(max(areas))
-	colors = ['Blue', 'Green', 'Red']
-	max_color = colors[max_area_index]
-
-	return max_color
-
+    return color_text

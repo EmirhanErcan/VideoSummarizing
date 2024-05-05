@@ -1,43 +1,82 @@
 /* body */
 .gradio-container {
+    
     background: rgb(32, 34, 34);
     max-width: 100% !important;
+    
+
 }
 
-#component-1 {
-    margin-bottom: 50px;
-}
-
-#component-8 {
+/* the largest div of outputVideo */
+#component-8, #component-18 {
     margin-top: 50px;
+    margin-bottom: 50px;
+    
 }
 
-#component-10 {
+/* outputVideo div*/
+#component-10, #component-20 {
     width: 50%;
     margin: 0 auto;
 }
 
+/* "Upload a file", "Submit" and "Submit Color" buttons */
 button.lg.svelte-cmf5ev {
-    width: 50%;
+    width: 35%;
     display: block;
     margin: 0 auto;
 }
 
-/* Description yazısı :
-This tool provides you to get important parts of your long video.
+/* Description p:
+"This tool provides you to get important parts of your long video.
 
 You can get specific things by using smart search ability.
 
-For example, movements of a man who wear red cloth can be searched and tool gives the exact time.
+For example, movements of a man who wear red cloth can be searched and tool gives the exact time."
 */
-span.md.svelte-1k4ye9u {
-    text-align: center;
-}
-
 span.md.svelte-1k4ye9u p {
     font-size: 20px;
     color: white;
 }
+
+
+/* Description span: */
+span.md.svelte-1k4ye9u {
+    text-align: center;
+}
+
+
+/* description div */
+#component-1 {
+    margin-bottom: 50px;
+}
+
+/* Largest div for Color radio*/
+#component-11 {
+    margin: 0 auto;
+    margin-bottom: 50px;
+    width: 25%;
+    
+}
+
+/* Color radio components div*/
+#component-13 {
+    margin: 0 auto;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

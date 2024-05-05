@@ -3,8 +3,10 @@ import gradio as gr
 import os
 import shutil
 from processing import process_video
-
 uploaded_videos_count = 0
+
+# bunu colorsubmitin içine falan atarım, eğer None ise hiç çalıştırmaz mesela
+color_texts_in_video = []
 
 # -------- file paths --------d
 
@@ -23,12 +25,10 @@ video_files = [file for file in video_files if file.endswith(('.mp4'))]
 # output directory
 output_video_folder = os.path.join(current_dir, "Results")
 
-
 # ------------------------
-
-def gradioApp(video_path):
+def gradioApp(video_path, colorFilter = None):
     
-    output_video_path = process_video(video_path, output_video_folder)
+    output_video_path = process_video(video_path, output_video_folder, colorFilter)
     return output_video_path
 
 # -------------------------------------
@@ -61,7 +61,7 @@ with gr.Blocks(css= "style.css", js= "myjs.js") as demo:
             outputVideo = gr.Video(label= "Summarized Video")
     with gr.Row():
         with gr.Column():
-            radio = gr.Radio(["Red","Green","Blue"], label="Color", info="Human Cloth Color")
+            radio = gr.Radio(["Red","Green","Blue"], label="Color Filter", info="Select a color to filter people")
     with gr.Row():
         with gr.Column():
             colorSubmit = gr.Button("Submit Color")
@@ -71,7 +71,7 @@ with gr.Blocks(css= "style.css", js= "myjs.js") as demo:
     
     u.upload(upload_file, u)
     btn.click(gradioApp, inputs=[u], outputs= outputVideo)
-    #colorSubmit.click(gradioApp, inputs=[u], outputs=outputVideo) # Değişecek fonksiyon vb
+    colorSubmit.click(gradioApp, inputs=[u, radio], outputs=colorFilterVideo) # Değişecek fonksiyon vb
     
    
 
