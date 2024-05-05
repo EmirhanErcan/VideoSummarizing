@@ -3,7 +3,6 @@ import cv2
 from deep_sort.utils.parser import get_config
 from deep_sort.deep_sort import DeepSort
 from ultralytics import YOLO  # Import your YOLO segmentation model class
-from colorDetection import detect_color
 from PIL import Image
 
 deep_sort_weights = 'deep_sort/deep/checkpoint/ckpt.t7'
