@@ -50,6 +50,9 @@ def update_tracker(results, frame, fps, track_detection_times, cap, track_colors
                 # color filtering - segmentation START
                 if colorFilter != track_colors[track_id]:
                     continue
+                # if colorFilter is matched with track_id's color, we will return the frame but we won't add text and rectangles because input video has them already.
+                willWeReturnFrame = True
+                continue
                         
             
             color_values = {

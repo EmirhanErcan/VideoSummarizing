@@ -56,7 +56,7 @@ with gr.Blocks(css= "style.css", js= "myjs.js") as demo:
     with gr.Row():
         with gr.Column():
             btn = gr.Button("Submit")
-    with gr.Row():    
+    with gr.Row():
         with gr.Column():
             outputVideo = gr.Video(label= "Summarized Video")
     with gr.Row():
@@ -65,13 +65,13 @@ with gr.Blocks(css= "style.css", js= "myjs.js") as demo:
     with gr.Row():
         with gr.Column():
             colorSubmit = gr.Button("Submit Color")
-    with gr.Row():    
+    with gr.Row():
         with gr.Column():
             colorFilterVideo = gr.Video(label= "Color Filtered Video")
     
     u.upload(upload_file, u)
     btn.click(gradioApp, inputs=[u], outputs= outputVideo)
-    colorSubmit.click(gradioApp, inputs=[u, radio], outputs=colorFilterVideo) # Değişecek fonksiyon vb
+    colorSubmit.click(gradioApp, inputs=[outputVideo, radio], outputs=colorFilterVideo) # Değişecek fonksiyon vb
     
    
 
