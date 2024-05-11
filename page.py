@@ -3,12 +3,20 @@ import gradio as gr
 import os
 import shutil
 from processing import process_video
+from matting import video_process
+import time
+import pickle
 uploaded_videos_count = 0
+
+color_tracks = None
+detected_frame_numbers = None
+detection_times_tracks = None
+bbox_tracks = None
 
 # bunu colorsubmitin içine falan atarım, eğer None ise hiç çalıştırmaz mesela
 color_texts_in_video = []
 
-# -------- file paths --------d
+# -------- file paths --------
 
 # Get the current directory
 current_dir = os.getcwd()
@@ -28,10 +36,37 @@ output_video_folder = os.path.join(current_dir, "Results")
 # ------------------------
 def gradioApp(video_path, colorFilter = None):
     
-    output_video_path = process_video(video_path, output_video_folder, colorFilter)
+    global detected_frame_numbers, detection_times_tracks, bbox_tracks
+
+    output_video_path, detected_frame_numbers, detection_times_tracks, bbox_tracks = process_video(video_path, output_video_folder, colorFilter)
+    
+    #detected_frame_numbers = detected_frame_numbers
+    #detection_times_tracks = detection_times_tracks
+    #bbox_tracks = bbox_tracks
+    
     return output_video_path
 
 # -------------------------------------
+
+def matting_video(uploaded_video_path, video_path, colorFilter=None):
+    global detected_frame_numbers, detection_times_tracks, bbox_tracks
+    track_list = [detected_frame_numbers, detection_times_tracks, bbox_tracks]
+
+    # Extract the base name of the input video file
+    base_name = os.path.basename(video_path)
+    
+    # Construct the output video file name with "_matted" appended
+    output_name = os.path.splitext(base_name)[0] + "_matted.mp4"
+
+    # Construct the output video path by joining the directory of the input video file with the new output file name
+    output_video_path = os.path.join(os.path.dirname(video_path), output_name)
+    print(f"output_video_path = {output_video_path}")
+    # Call the video_process function with the modified output video path
+    output_video_path = video_process(uploaded_video_path, video_path, output_video_path, track_list)
+
+    return output_video_path
+
+
 def upload_file(filepath):
     global uploaded_videos_count
 
@@ -41,7 +76,6 @@ def upload_file(filepath):
     # Dosyanın hedef klasöre kopyalanması
     uploaded_file_path = filepath
     uploaded_videos_count += 1
-
     # Kullanıcının yüklediği dosyayı hedef klasöre kopyalayın
     save_path = os.path.join(save_folder, f"video{uploaded_videos_count}.mp4")
     shutil.copy(uploaded_file_path, save_path)
@@ -68,11 +102,18 @@ with gr.Blocks(css= "style.css", js= "myjs.js") as demo:
     with gr.Row():
         with gr.Column():
             colorFilterVideo = gr.Video(label= "Color Filtered Video")
+    with gr.Row():
+        with gr.Column():
+            mattingSubmit = gr.Button("Submit for Matting")
+    with gr.Row():
+        with gr.Column():
+            MattingVideo = gr.Video(label= "Matted Video")
     
+    mattingSubmit.click(matting_video, inputs=[u,outputVideo], outputs= MattingVideo)
     u.upload(upload_file, u)
     btn.click(gradioApp, inputs=[u], outputs= outputVideo)
     colorSubmit.click(gradioApp, inputs=[outputVideo, radio], outputs=colorFilterVideo) # Değişecek fonksiyon vb
-    
+    mattingSubmit.click()
    
 
 demo.launch(share=True)
