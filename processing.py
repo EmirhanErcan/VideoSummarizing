@@ -1,75 +1,81 @@
 import cv2
 from detection import detect_objects
 from tracking import update_tracker
-from segmentation import segmentate_objects
 import os
 import pickle
 
+"""
 
-def process_video(video_path, output_path, colorFilter=None):
-    """Process input video and save the output video."""
-    cap = cv2.VideoCapture(video_path)
-    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    fourcc = cv2.VideoWriter_fourcc(*'H264')
+    Explanations of dictionaries:
 
-    output_name = "output_"
-    # Define the output video path in the specified folder
-    
-    output_video_path = os.path.join(output_path, output_name + os.path.basename(video_path))
-    out = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height))
-    
+    dict_id_color = {track_id1:"Red", track_id2:"Green", track_id3:"Blue", ...}
+    dict_id_og_frames = {track_id1:[1,2,3,50,51,52,53,100,101,102], track_id2:[5,6,7,8,9], ...}
+    dict_id_detected_time_seconds = {track_id1:seconds1, track_id2:seconds2, track_id3:seconds3, ...}
+    dict_time_ids_xyxy = {detect_time=1:{track_id=1:[x1,y1,x2,y2],track_id=2:[x1,y1,x2,y2]}, [detect_time,x1,y1,x2,y2], ...], track_id=2;[[detect_time,x1,y1,x2,y2]]}
+    dict_frame_colors = {frame_number1: ["red", "blue"], frame_number2: ["green"], .....}
 
-    track_colors = {}
-    detected_frame_numbers = {}
-    detection_times_tracks = {}
-    bbox_tracks = {}
-
-    detected_frame_index = cap.get(cv2.CAP_PROP_POS_FRAMES)
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+"""
 
 
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            print(f"detected_frame_numbers::: {detected_frame_numbers}")
-            print(f"detection_times_tracks::: {detection_times_tracks}")
-            print(f"bbox_tracks::: {len(bbox_tracks)}")
-            return output_video_path, detected_frame_numbers, detection_times_tracks, bbox_tracks
+class VideoProcessor:
+    def __init__(self):
+        self.total_frames = 0
+        self.detected_frame_index = 0
+        self.dict_id_color = {}
+        self.dict_id_og_frames = {}
+        self.dict_id_detected_time_seconds = {}
+        self.dict_time_ids_xyxy = {}
+        self.dict_frame_colors = {}
 
+    def process_video(self, video_path, output_path):
+        """Process input video and save the output video."""
+        cap = cv2.VideoCapture(video_path)
+        frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        fourcc = cv2.VideoWriter_fourcc(*'H264')
 
-        percentage = f"{(detected_frame_index / total_frames)*100}%"
-        with open("timer_stubs/percentage.pkl", 'wb') as f:
-            pickle.dump(percentage, f)
+        output_name = "output_"
+        # Define the output video path in the specified folder
         
+        output_video_path = os.path.join(output_path, output_name + os.path.basename(video_path))
+        out = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height))
+        
+        
+        self.total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-        if not frame_contains_humans(frame):
-            continue
 
-        results = detect_objects(frame)
-        processed_frame = update_tracker(results, frame, fps, cap, track_colors, colorFilter, detected_frame_numbers, detection_times_tracks, bbox_tracks)
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                return output_video_path
 
-        if processed_frame is not None:
+            self.detected_frame_index = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
+            
+
+            if not self.frame_contains_humans(frame):
+                continue
+
+            results = detect_objects(frame)
+            processed_frame = update_tracker(results, frame, fps, cap, self.dict_id_color, self.dict_id_og_frames, self.dict_id_detected_time_seconds, self.dict_time_ids_xyxy, self.dict_frame_colors)
             out.write(cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB))
 
-    
-    cap.release()
-    out.release()
-    
-    
+        cap.release()
+        out.release()
+        
+        
 
-    
+        
 
 
-def frame_contains_humans(frame, min_confidence=0.5):
-    # Detect humans in the frame using your YOLO model
-    results = detect_objects(frame, min_confidence)
-    
-    for result in results:
-        if len(result.boxes.xyxy) > 0:
-            return True
-    return False
-    
-    
-    
+    def frame_contains_humans(self, frame, min_confidence=0.7):
+        # Detect humans in the frame using your YOLO model
+        results = detect_objects(frame, min_confidence)
+        
+        for result in results:
+            if len(result.boxes.xyxy) > 0:
+                return True
+        return False
+        
+        
+        

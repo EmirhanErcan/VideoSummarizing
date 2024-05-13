@@ -5,7 +5,7 @@ import os
 
 model = YOLO('yolov8n-seg.pt')
 
-def video_process(uploaded_video_path, video_path, output_path, track_list):
+def matting_video(uploaded_video_path, video_path, output_path, track_list):
     detected_frame_numbers, detection_times_tracks, bbox_tracks = track_list
     
     # cap open (used for getting frame_width, frame_height and fps)
@@ -20,6 +20,10 @@ def video_process(uploaded_video_path, video_path, output_path, track_list):
     output_video_path = output_path
     out = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height))
     
+
+    
+    
+
     #-------- black frame oluşturmak başlangıç --------
     videoFrames = []
 
@@ -38,42 +42,56 @@ def video_process(uploaded_video_path, video_path, output_path, track_list):
 
     
     #-------- black frame oluşturmak bitiş --------
-
+    count = 0 # kaldırılacak
+    track_id_count = 0 #kaldırılacak
     #-------- videoFrames üzerine insanları dikiyoruz başlangıç --------
     
-    for track_id, frames in detected_frame_numbers.items(): # track_id'yi ve max frame'ini alıyoruz
+    for track_id, frames in dict_id_og_frames.items(): # track_id'yi ve max frame'ini alıyoruz
+        track_id_count += 1
         for new_frame in range(len(frames)): # number will be between 1 and max frame sayısı
-
+            count += 1
+            
+            print(f"track_id_count {track_id_count}")
+            print(f"count {count}")
+            print(f"new_frame = {new_frame}")
             cap = cv2.VideoCapture(uploaded_video_path)
-            original_frame_number = detected_frame_numbers[track_id][new_frame] # frame. indexi veriyoruz ve asıl frame değerine ulaşıyoruz.
-            bbox_coordinates = bbox_tracks[original_frame_number][track_id] # algılanan original_frame'deki bu track_id'ye ait olan bbox değerini elde ediyoruz
+            original_frame_number = dict_id_og_frames[track_id][new_frame] # frame. indexi veriyoruz ve asıl frame değerine ulaşıyoruz.
+            bbox_coordinates = dict_time_ids_xyxy[original_frame_number][track_id] # algılanan original_frame'deki bu track_id'ye ait olan bbox değerini elde ediyoruz
 
             if len(bbox_coordinates) == 0:
                 continue
-
+            # for making it suitable with bigger frame, x * og_frame_width
             x1, y1, x2, y2 = bbox_coordinates
             x1 = int(x1)
             y1 = int(y1)
             x2 = int(x2)
             y2 = int(y2)
+            print(f"x1 -> {x1}")
+            print(f"y1 -> {y1}")
+            print(f"x2 -> {x2}")
+            print(f"y2 -> {y2}")
 
+            print(f"original_Frame_number = {original_frame_number}")
             cap.set(cv2.CAP_PROP_POS_FRAMES, original_frame_number)
             ret, original_image = cap.read()
             cap.release()
 
+            
             if ret is False: 
                 continue
             
+
             cropped_image = original_image[y1:y2 , x1:x2] #original_frame
 
             processed_image = matting(cropped_image)
             if processed_image is None:
                 continue
 
-            if processed_image is None: # hataları böyle çözmeye çalıştım 09.05.2024 06:03
-                continue                # hataları böyle çözmeye çalıştım 09.05.2024 06:03
-            
             videoFrames[new_frame][y1:y2 , x1:x2] = processed_image # processed_image added to the video frame (black background at first)
+            
+           
+            
+    
             
     #-------- videoFrames üzerine insanları dikiyoruz bitiş --------
     
@@ -83,7 +101,6 @@ def video_process(uploaded_video_path, video_path, output_path, track_list):
 
         # Load the replacement background image
         background_image = cv2.imread('securitycam.png')
-        #background_image = cv2.cvtColor(background_image, cv2.COLOR_BGR2RGB)
         background_image = cv2.resize(background_image, (frame.shape[1], frame.shape[0]))
 
         mask = cv2.inRange(frame, (0,0,0), (0, 0, 0))
@@ -135,7 +152,6 @@ def matting(image):
         
         # Extract colored human using bitwise AND with mask
         extracted_colored_human = cv2.bitwise_and(image, image, mask=human_mask_binary)
-
 
     if extracted_colored_human is None:
         return None

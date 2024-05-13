@@ -3,25 +3,22 @@ import cv2
 from deep_sort.utils.parser import get_config
 from deep_sort.deep_sort import DeepSort
 from ultralytics import YOLO  # Import your YOLO segmentation model class
-from colorDetecting import detect_color
-from PIL import Image
+from colorFilterFile import detect_color
 
 deep_sort_weights = 'deep_sort/deep/checkpoint/ckpt.t7'
-tracker = DeepSort(model_path=deep_sort_weights, min_confidence=0.3, max_iou_distance=0.5, max_age=10)
+tracker = DeepSort(model_path=deep_sort_weights, min_confidence=0.3, max_iou_distance=0.7, max_age=20, n_init=4)
 
-# Initialize YOLO model for segmentation
-segment_model = YOLO('yolov8n-seg.pt')
 
-def update_tracker(results, frame, fps, cap, track_colors, colorFilter, detected_frame_numbers, detection_times_tracks, bbox_tracks):
+def update_tracker(results, frame, fps, cap, dict_id_color, dict_id_og_frames, dict_id_detected_time_seconds, dict_time_ids_xyxy, dict_frame_colors):
     og_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     detected_frame_index = cap.get(cv2.CAP_PROP_POS_FRAMES)
-    detected_time = detected_frame_index / fps
+    detected_time_seconds = detected_frame_index / fps
 
 
-    bbox_tracks[detected_frame_index] = {} # CHANGED 08.05.2024 20:25
-
+    dict_time_ids_xyxy[detected_frame_index] = {} # CHANGED 08.05.2024 20:25
+    
     # Dictionary to store color counts for each track
-    track_colors = track_colors
+    dict_id_color = dict_id_color
     willWeReturnFrame = False
     for result in results:
         boxes = result.boxes
@@ -33,52 +30,39 @@ def update_tracker(results, frame, fps, cap, track_colors, colorFilter, detected
 
         tracks = tracker.update(bboxes_xywh, conf, og_frame)
 
-
-        
-
         rect_color = (0, 0, 0)
         for track in tracker.tracker.tracks:
             track_id = track.track_id
 
-            bbox_tlwh = track.to_tlwh()
-            x1, y1, x2, y2 = tracker._tlwh_to_xyxy(bbox_tlwh)
-            
-            bbox_tracks[detected_frame_index][track_id] = [x1, y1, x2, y2]
+            # track.to_tlbr() -> xmin, ymin, xmax, ymax
+            dict_time_ids_xyxy[detected_frame_index][track_id] = track.to_tlbr()
             
 
-            if track_id not in detected_frame_numbers:
-                detected_frame_numbers[track_id] = []
-            detected_frame_numbers[track_id].append(detected_frame_index) # CHANGED 08.05.2024 19:49
+            if track_id not in dict_id_og_frames:
+                dict_id_og_frames[track_id] = []
+            dict_id_og_frames[track_id].append(detected_frame_index) # CHANGED 08.05.2024 19:49
 
             # insan ilk defa algılanıyorsa algılanma zamanını yazıyoruz ve insanın rengini hesaplayıp dictionary içine atıyoruz 
-            if track_id not in detection_times_tracks: # CHANGED 08.05.2024 19:49
-                detection_times_tracks[track_id] = detected_time
-                # I didn't put these three lines on "colorFilter is not None" part because i need these variables to write correct colored rectangle
+            if track_id not in dict_id_detected_time_seconds: # CHANGED 08.05.2024 19:49
+                dict_id_detected_time_seconds[track_id] = detected_time_seconds
                 image = cv2.cvtColor(og_frame.copy(), cv2.COLOR_RGB2BGR)
                 color_text = detect_color(image)
-                track_colors[track_id] = color_text
-                # if there is a colorFilter input form the user:
+                dict_id_color[track_id] = color_text
+            if detected_frame_index not in dict_frame_colors:
+                dict_frame_colors[detected_frame_index] = []
+            track_id_color = dict_id_color[track_id]
+            dict_frame_colors[detected_frame_index].append(track_id_color)
 
-            # renk filtresi girilmişse ve o objenin rengiyle uyuşmuyorsa diğer objeye (tracke) geç
-            if colorFilter is not None:
-                # color filtering - segmentation START
-                if colorFilter != track_colors[track_id]:
-                    continue
-                # if colorFilter is matched with track_id's color, we will return the frame but we won't add text and rectangles because input video has them already.
-                willWeReturnFrame = True
-                continue
-                        
-            
             color_values = {
                 "Blue":(0, 0, 255),
                 "Green":(0, 255, 0),
                 "Red":(255, 0, 0)
             }
-            if len(track_colors) > 0:
-                rect_color = color_values[track_colors[track_id]]
+            if len(dict_id_color) > 0:
+                rect_color = color_values[dict_id_color[track_id]]
             
 
-            detection_time = detection_times_tracks[track_id]
+            detection_time = dict_id_detected_time_seconds[track_id]
             hour = int(detection_time / 3600)
             minute = int((detection_time % 3600) / 60)
             second = int(detection_time % 60)
@@ -90,11 +74,11 @@ def update_tracker(results, frame, fps, cap, track_colors, colorFilter, detected
             willWeReturnFrame = True
 
             cv2.rectangle(og_frame, (int(x1), int(y1)), (int(x1 + w), int(y1 + h)), rect_color, 1)
-            cv2.putText(og_frame, f"Person-{track_id} ({hour}h {minute}m {second}s) {track_colors[track_id]}",
+            cv2.putText(og_frame, f"Person-{track_id} ({hour}h {minute}m {second}s) {dict_id_color[track_id]}",
                         (int(x1) + 10, int(y1) - 5),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
 
-    if willWeReturnFrame:
-        return og_frame
-    else:
-        return None
+
+    return og_frame
+
+

@@ -2,21 +2,24 @@
 import gradio as gr
 import os
 import shutil
-from processing import process_video
-from matting import video_process
+from processing import VideoProcessor
+from matting import matting_video
+from colorFilterFile import colorFilter
 import time
-import pickle
+
+video_processor = VideoProcessor()
+
 uploaded_videos_count = 0
 
 color_tracks = None
-detected_frame_numbers = None
-detection_times_tracks = None
-bbox_tracks = None
+dict_id_og_frames = None
+dict_id_detected_time_seconds = None
+dict_time_ids_xyxy = None
 
 # bunu colorsubmitin içine falan atarım, eğer None ise hiç çalıştırmaz mesela
 color_texts_in_video = []
 
-# -------- file paths --------
+# -------- file paths --------d
 
 # Get the current directory
 current_dir = os.getcwd()
@@ -33,24 +36,28 @@ video_files = [file for file in video_files if file.endswith(('.mp4'))]
 # output directory
 output_video_folder = os.path.join(current_dir, "Results")
 
-# ------------------------
-def gradioApp(video_path, colorFilter = None):
-    
-    global detected_frame_numbers, detection_times_tracks, bbox_tracks
+def load_set(progress=gr.Progress()):
+    imgs = [None] * video_processor.total_frames
+    for img in progress.tqdm(video_processor.total_frames, desc=f"{(video_processor.detected_frame_index / video_processor.total_frames)*100}%"):
 
-    output_video_path, detected_frame_numbers, detection_times_tracks, bbox_tracks = process_video(video_path, output_video_folder, colorFilter)
+        
+        time.sleep(0.1)
+    return "Loaded"
+
+
+# ------------------------
+def gradioApp(video_path):
     
-    #detected_frame_numbers = detected_frame_numbers
-    #detection_times_tracks = detection_times_tracks
-    #bbox_tracks = bbox_tracks
-    
+    output_video_path = video_processor.process_video(video_path, output_video_folder)
     return output_video_path
 
 # -------------------------------------
 
-def matting_video(uploaded_video_path, video_path, colorFilter=None):
-    global detected_frame_numbers, detection_times_tracks, bbox_tracks
-    track_list = [detected_frame_numbers, detection_times_tracks, bbox_tracks]
+def mattingFunction(uploaded_video_path, video_path):
+    dict_id_og_frames = video_processor.dict_id_og_frames
+    dict_id_detected_time_seconds = video_processor.dict_id_detected_time_seconds
+    dict_time_ids_xyxy = video_processor.dict_time_ids_xyxy
+    track_list = [dict_id_og_frames, dict_id_detected_time_seconds, dict_time_ids_xyxy]
 
     # Extract the base name of the input video file
     base_name = os.path.basename(video_path)
@@ -61,11 +68,20 @@ def matting_video(uploaded_video_path, video_path, colorFilter=None):
     # Construct the output video path by joining the directory of the input video file with the new output file name
     output_video_path = os.path.join(os.path.dirname(video_path), output_name)
     print(f"output_video_path = {output_video_path}")
-    # Call the video_process function with the modified output video path
-    output_video_path = video_process(uploaded_video_path, video_path, output_video_path, track_list)
+    # Call the matting_video function with the modified output video path
+    output_video_path = matting_video(uploaded_video_path, video_path, output_video_path, track_list)
 
     return output_video_path
 
+def colorFilteringFunction(input_video, inputColor):
+    dict_frame_colors = video_processor.dict_frame_colors
+    dict_id_detected_time_seconds = video_processor.dict_id_detected_time_seconds
+    dict_time_ids_xyxy = video_processor.dict_time_ids_xyxy
+    dict_id_color = video_processor.dict_id_color
+    dict_id_og_frames = video_processor.dict_id_og_frames
+
+    output_video_path = colorFilter(input_video, inputColor, output_video_folder, dict_frame_colors, dict_id_detected_time_seconds, dict_time_ids_xyxy, dict_id_color, dict_id_og_frames)
+    return output_video_path
 
 def upload_file(filepath):
     global uploaded_videos_count
@@ -92,7 +108,7 @@ with gr.Blocks(css= "style.css", js= "myjs.js") as demo:
             btn = gr.Button("Submit")
     with gr.Row():
         with gr.Column():
-            outputVideo = gr.Video(label= "Summarized Video")
+            outputVideo = gr.Video(label= "Summarized Video", interactive= False)
     with gr.Row():
         with gr.Column():
             radio = gr.Radio(["Red","Green","Blue"], label="Color Filter", info="Select a color to filter people")
@@ -108,11 +124,16 @@ with gr.Blocks(css= "style.css", js= "myjs.js") as demo:
     with gr.Row():
         with gr.Column():
             MattingVideo = gr.Video(label= "Matted Video")
+    with gr.Row():
+        with gr.Column():
+            load = gr.Button("Load")
+            label = gr.Label(label="Loader")
     
-    mattingSubmit.click(matting_video, inputs=[u,outputVideo], outputs= MattingVideo)
+    load.click(load_set, outputs=label)
+    mattingSubmit.click(mattingFunction, inputs=[u,outputVideo], outputs= MattingVideo)
     u.upload(upload_file, u)
     btn.click(gradioApp, inputs=[u], outputs= outputVideo)
-    colorSubmit.click(gradioApp, inputs=[outputVideo, radio], outputs=colorFilterVideo) # Değişecek fonksiyon vb
+    colorSubmit.click(colorFilteringFunction, inputs=[u, radio], outputs=colorFilterVideo) # Değişecek fonksiyon vb
     mattingSubmit.click()
    
 
