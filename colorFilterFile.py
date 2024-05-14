@@ -41,10 +41,7 @@ def colorFilter(input_video, inputColor, output_path, dict_frame_colors, dict_id
                 for track_id, color in dict_id_color.items():
                     
                     if color == inputColor and (current_frame_index in dict_id_og_frames[track_id]):
-                        print("hello")
                         detected_time = dict_id_detected_time_seconds[track_id]
-                        print(f"track_id = {track_id}")
-                        print(f"detected_time = {detected_time}")
                         hour = int(detected_time / 3600)
                         minute = int((detected_time % 3600) / 60)
                         second = int(detected_time % 60)
@@ -120,7 +117,3 @@ def detect_color(image):
     color_text = max_color
 
     return color_text
-
-
-
-
