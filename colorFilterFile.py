@@ -56,7 +56,7 @@ def colorFilter(input_video, inputColor, output_path, dict_frame_colors, dict_id
                                    (int(x1) + 10, int(y1) - 5),
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, rect_color, 1, cv2.LINE_AA)
 
-                        out.write(frame)
+        out.write(frame)
         
     cap.release()
     out.release()
