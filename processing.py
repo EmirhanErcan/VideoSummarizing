@@ -45,25 +45,30 @@ class VideoProcessor:
         
         self.total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-
+        humanDetector = 0
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret:
+                if humanDetector == self.detected_frame_index:
+                    raise ValueError("No human detected")
                 return output_video_path
 
             self.detected_frame_index = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
             
 
             if not self.frame_contains_humans(frame):
+                humanDetector += 1
                 self.backgroundframe = frame
                 continue
 
             results = detect_objects(frame)
+            
             if len(results[0].boxes.xyxy) == 0:
                 continue
             processed_frame = update_tracker(results, frame, fps, cap, self.dict_id_color, self.dict_id_og_frames, self.dict_id_detected_time_seconds, self.dict_time_ids_xyxy, self.dict_frame_colors)
             if processed_frame is not None:
                 out.write(cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB))
+            
 
         
         cap.release()

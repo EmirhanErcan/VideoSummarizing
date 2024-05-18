@@ -23,16 +23,20 @@ def colorFilter(input_video, inputColor, output_path, dict_frame_colors, dict_id
         "Red":(0, 0, 255)
     }
     rect_color = color_values[inputColor]
-    
+
+    anyColor = True
     while cap.isOpened():
         ret, frame = cap.read()
+        current_frame_index = cap.get(cv2.CAP_PROP_POS_FRAMES)
+        current_frame_color = dict_frame_colors.get(current_frame_index)
         
         if ret == False:
+            if anyColor is False:
+                raise ValueError(f"There is not {inputColor} human in this video")
             return output_video_path
         
 
-        current_frame_index = cap.get(cv2.CAP_PROP_POS_FRAMES)
-        current_frame_color = dict_frame_colors.get(current_frame_index)
+        
         
         
         if current_frame_color is not None:
@@ -54,7 +58,9 @@ def colorFilter(input_video, inputColor, output_path, dict_frame_colors, dict_id
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, rect_color, 1, cv2.LINE_AA)
 
                 out.write(frame)
-        
+            else:
+                anyColor = False
+            
     cap.release()
     out.release()
 

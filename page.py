@@ -6,6 +6,7 @@ from processing import VideoProcessor
 from matting import matting_video
 from colorFilterFile import colorFilter
 import time
+from time import perf_counter
 
 video_processor = VideoProcessor()
 
@@ -32,65 +33,129 @@ video_files = [file for file in video_files if file.endswith(('.mp4'))]
 output_video_folder = os.path.join(current_dir, "Results")
 
 def load_set(progress=gr.Progress()):
-    imgs = [None] * video_processor.total_frames
-    for img in progress.tqdm(video_processor.total_frames, desc=f"{(video_processor.detected_frame_index / video_processor.total_frames)*100}%"):
-
+    for i in progress.tqdm(range(video_processor.total_frames)):
         
-        time.sleep(0.1)
-    return "Loaded"
+        start = perf_counter() 
+        detected_frame_index = video_processor.detected_frame_index
+        #percent = video_processor.detected_frame_index / video_processor.total_frames 
+        
+        time_interval = 0
+        while True:
+
+            if detected_frame_index < video_processor.detected_frame_index:
+                stop = perf_counter() 
+                time_interval = stop - start
+                break
+        
+        time.sleep(time_interval)
 
 
 # ------------------------
 def gradioApp(video_path):
-    
-    output_video_path = video_processor.process_video(video_path, output_video_folder)
-    return output_video_path
+    try:
+        if not video_path:
+            raise ValueError("Video path must be provided.")
+        output_video_path = video_processor.process_video(video_path, output_video_folder)
+        return output_video_path
+    except ValueError as ve:
+        gr.Warning(f"{ve}")
+        print(f"ValueError: {ve}")
+        return "Error: Please upload a video before click to Submit button"
+    except Exception as e:
+        gr.Warning(f"{e}")
+        print(f"Error in gradioApp: {e}")
+        return "Error processing video."
 
 # -------------------------------------
 
 def mattingFunction(uploaded_video_path, video_path):
-    dict_id_og_frames = video_processor.dict_id_og_frames
-    dict_id_detected_time_seconds = video_processor.dict_id_detected_time_seconds
-    dict_time_ids_xyxy = video_processor.dict_time_ids_xyxy
-    track_list = [dict_id_og_frames, dict_id_detected_time_seconds, dict_time_ids_xyxy]
+    try:
+        if not uploaded_video_path:
+            raise ValueError("PLease upload the video at first.Then, summarize it before matting")
+        if not video_path:
+            raise ValueError("PLease summarize the video at first. (click to Submit)")
+        
+        dict_id_og_frames = video_processor.dict_id_og_frames
+        dict_id_detected_time_seconds = video_processor.dict_id_detected_time_seconds
+        dict_time_ids_xyxy = video_processor.dict_time_ids_xyxy
+        track_list = [dict_id_og_frames, dict_id_detected_time_seconds, dict_time_ids_xyxy]
 
-    backgroundframe = video_processor.backgroundframe
-    # Extract the base name of the input video file
-    base_name = os.path.basename(video_path)
-    
-    # Construct the output video file name with "_matted" appended
-    output_name = os.path.splitext(base_name)[0] + "_matted.mp4"
+        backgroundframe = video_processor.backgroundframe
+        # Extract the base name of the input video file
+        base_name = os.path.basename(video_path)
+        
+        # Construct the output video file name with "_matted" appended
+        output_name = os.path.splitext(base_name)[0] + "_matted.mp4"
 
-    # Construct the output video path by joining the directory of the input video file with the new output file name
-    output_video_path = os.path.join(os.path.dirname(video_path), output_name)
-    print(f"output_video_path = {output_video_path}")
-    # Call the matting_video function with the modified output video path
-    output_video_path = matting_video(uploaded_video_path, video_path, output_video_path, track_list, dict_id_og_frames, dict_time_ids_xyxy, backgroundframe)
+        # Construct the output video path by joining the directory of the input video file with the new output file name
+        output_video_path = os.path.join(os.path.dirname(video_path), output_name)
+        print(f"output_video_path = {output_video_path}")
+        # Call the matting_video function with the modified output video path
+        output_video_path = matting_video(uploaded_video_path, video_path, output_video_path, track_list, dict_id_og_frames, dict_time_ids_xyxy, backgroundframe)
 
-    return output_video_path
+        return output_video_path
+    except ValueError as ve:
+        gr.Warning(f"{ve}")
+        print(f"ValueError: {ve}")
+        return ve
+    except Exception as e:
+        gr.Warning(f"{ve}")
+        print(f"Error in mattingFunction: {e}")
+        return "Error during matting."
+
+
 
 def colorFilteringFunction(input_video, inputColor):
-    dict_frame_colors = video_processor.dict_frame_colors
-    dict_id_detected_time_seconds = video_processor.dict_id_detected_time_seconds
-    dict_time_ids_xyxy = video_processor.dict_time_ids_xyxy
-    dict_id_color = video_processor.dict_id_color
-    dict_id_og_frames = video_processor.dict_id_og_frames
+    try:
+        if not input_video:
+            raise ValueError("Please Summarize the video first")
+        if not inputColor:
+            raise ValueError("Please select a color before submit color filter")
+        dict_frame_colors = video_processor.dict_frame_colors
+        dict_id_detected_time_seconds = video_processor.dict_id_detected_time_seconds
+        dict_time_ids_xyxy = video_processor.dict_time_ids_xyxy
+        dict_id_color = video_processor.dict_id_color
+        dict_id_og_frames = video_processor.dict_id_og_frames
 
-    output_video_path = colorFilter(input_video, inputColor, output_video_folder, dict_frame_colors, dict_id_detected_time_seconds, dict_time_ids_xyxy, dict_id_color, dict_id_og_frames)
-    return output_video_path
+        output_video_path = colorFilter(input_video, inputColor, output_video_folder, dict_frame_colors, dict_id_detected_time_seconds, dict_time_ids_xyxy, dict_id_color, dict_id_og_frames)
+        return output_video_path
+    except ValueError as ve:
+        gr.Warning(f"{ve}")
+        print(f"ValueError: {ve}")
+        return ve
+    except Exception as e:
+        gr.Warning(f"{e}")
+        print(f"Error in colorFilteringFunction: {e}")
+        return "Error during color filtering."
 
 def upload_file(filepath):
     global uploaded_videos_count
+    try:
+        # Ensure the file is an MP4 file
+        if not filepath.endswith('.mp4'):
+            raise ValueError("The uploaded file is not an MP4 file.")
+        
+        # Define the folder to save the file permanently
+        save_folder = "GradioSave"
+        
+        # Increment the counter for uploaded videos
+        uploaded_videos_count += 1
+        
+        # Construct the save path for the uploaded file
+        save_path = os.path.join(save_folder, f"video{uploaded_videos_count}.mp4")
+        
+        # Copy the user's uploaded file to the target folder
+        shutil.copy(filepath, save_path)
+        
+    except ValueError as ve:
+        gr.Warning(str(ve))
+        print(f"ValueError: {ve}")
+        return "Error: The uploaded file must be an MP4 file."
+    except Exception as e:
+        gr.Warning("Error while uploading the file")
+        print(f"Error while uploading the file: {e}")
+        return "Error during uploading the file."
 
-    # Dosyayı kalıcı olarak saklamak istediğiniz klasörü belirleyin
-    save_folder = "GradioSave"
-    
-    # Dosyanın hedef klasöre kopyalanması
-    uploaded_file_path = filepath
-    uploaded_videos_count += 1
-    # Kullanıcının yüklediği dosyayı hedef klasöre kopyalayın
-    save_path = os.path.join(save_folder, f"video{uploaded_videos_count}.mp4")
-    shutil.copy(uploaded_file_path, save_path)
 
 # ------------------------------------
 
@@ -102,6 +167,9 @@ with gr.Blocks(css= "style.css", js= "myjs.js") as demo:
     with gr.Row():
         with gr.Column():
             btn = gr.Button("Submit")
+    with gr.Row():
+        with gr.Column():    
+            percent = gr.Label(label="percent !")
     with gr.Row():
         with gr.Column():
             outputVideo = gr.Video(label= "Summarized Video", interactive= False)
@@ -129,6 +197,7 @@ with gr.Blocks(css= "style.css", js= "myjs.js") as demo:
     mattingSubmit.click(mattingFunction, inputs=[u,outputVideo], outputs= MattingVideo)
     u.upload(upload_file, u)
     btn.click(gradioApp, inputs=[u], outputs= outputVideo)
+    #btn.click(load_set, outputs=percent)
     colorSubmit.click(colorFilteringFunction, inputs=[u, radio], outputs=colorFilterVideo) # Değişecek fonksiyon vb
    
 
