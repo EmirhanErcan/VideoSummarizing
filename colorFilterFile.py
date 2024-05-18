@@ -53,7 +53,7 @@ def colorFilter(input_video, inputColor, output_path, dict_frame_colors, dict_id
                                    (int(x1) + 10, int(y1) - 5),
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, rect_color, 1, cv2.LINE_AA)
 
-            out.write(frame)
+                out.write(frame)
         
     cap.release()
     out.release()
@@ -64,7 +64,7 @@ def colorFilter(input_video, inputColor, output_path, dict_frame_colors, dict_id
 # matrix formatted image
 def detect_color(image):
 
-    predict = model.predict(image, save=False, classes=[0], conf=0.25, save_txt=False)
+    predict = model.predict(image, save=False, classes=[0], conf=0.1, save_txt=False)
      
     human_mask = (predict[0].masks.data[0].cpu().numpy() * 255).astype("uint8")
     
@@ -117,3 +117,7 @@ def detect_color(image):
     color_text = max_color
 
     return color_text
+
+
+
+

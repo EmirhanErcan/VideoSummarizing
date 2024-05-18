@@ -5,7 +5,7 @@ import os
 
 model = YOLO('yolov8n-seg.pt')
 
-def matting_video(uploaded_video_path, video_path, output_path, track_list):
+def matting_video(uploaded_video_path, video_path, output_path, track_list, dict_id_og_frames, dict_time_ids_xyxy, backgroundframe):
     detected_frame_numbers, detection_times_tracks, bbox_tracks = track_list
     
     # cap open (used for getting frame_width, frame_height and fps)
@@ -100,7 +100,7 @@ def matting_video(uploaded_video_path, video_path, output_path, track_list):
     for frame in videoFrames:
 
         # Load the replacement background image
-        background_image = cv2.imread('securitycam.png')
+        background_image = backgroundframe
         background_image = cv2.resize(background_image, (frame.shape[1], frame.shape[0]))
 
         mask = cv2.inRange(frame, (0,0,0), (0, 0, 0))
@@ -121,7 +121,7 @@ def matting_video(uploaded_video_path, video_path, output_path, track_list):
 def matting(image):
 
     # Human extraction using a yolo segmentation model 
-    predicts = model(image, save=False, classes=[0], conf=0.25, save_txt=False)
+    predicts = model(image, save=False, classes=[0], conf=0.1, save_txt=False)
     
     extracted_colored_human = None
     

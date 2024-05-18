@@ -11,11 +11,6 @@ video_processor = VideoProcessor()
 
 uploaded_videos_count = 0
 
-color_tracks = None
-dict_id_og_frames = None
-dict_id_detected_time_seconds = None
-dict_time_ids_xyxy = None
-
 # bunu colorsubmitin içine falan atarım, eğer None ise hiç çalıştırmaz mesela
 color_texts_in_video = []
 
@@ -59,6 +54,7 @@ def mattingFunction(uploaded_video_path, video_path):
     dict_time_ids_xyxy = video_processor.dict_time_ids_xyxy
     track_list = [dict_id_og_frames, dict_id_detected_time_seconds, dict_time_ids_xyxy]
 
+    backgroundframe = video_processor.backgroundframe
     # Extract the base name of the input video file
     base_name = os.path.basename(video_path)
     
@@ -69,7 +65,7 @@ def mattingFunction(uploaded_video_path, video_path):
     output_video_path = os.path.join(os.path.dirname(video_path), output_name)
     print(f"output_video_path = {output_video_path}")
     # Call the matting_video function with the modified output video path
-    output_video_path = matting_video(uploaded_video_path, video_path, output_video_path, track_list)
+    output_video_path = matting_video(uploaded_video_path, video_path, output_video_path, track_list, dict_id_og_frames, dict_time_ids_xyxy, backgroundframe)
 
     return output_video_path
 
@@ -134,7 +130,6 @@ with gr.Blocks(css= "style.css", js= "myjs.js") as demo:
     u.upload(upload_file, u)
     btn.click(gradioApp, inputs=[u], outputs= outputVideo)
     colorSubmit.click(colorFilteringFunction, inputs=[u, radio], outputs=colorFilterVideo) # Değişecek fonksiyon vb
-    mattingSubmit.click()
    
 
 demo.launch(share=True)
