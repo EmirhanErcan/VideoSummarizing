@@ -32,6 +32,7 @@ video_files = [file for file in video_files if file.endswith(('.mp4'))]
 # output directory
 output_video_folder = os.path.join(current_dir, "Results")
 
+
 def load_set(progress=gr.Progress()):
     for i in progress.tqdm(range(video_processor.total_frames)):
         
@@ -60,11 +61,9 @@ def gradioApp(video_path):
     except ValueError as ve:
         gr.Warning(f"{ve}")
         print(f"ValueError: {ve}")
-        return "Error: Please upload a video before click to Submit button"
     except Exception as e:
         gr.Warning(f"{e}")
         print(f"Error in gradioApp: {e}")
-        return "Error processing video."
 
 # -------------------------------------
 
@@ -74,11 +73,9 @@ def mattingFunction(uploaded_video_path, video_path):
             raise ValueError("PLease upload the video at first.Then, summarize it before matting")
         if not video_path:
             raise ValueError("PLease summarize the video at first. (click to Submit)")
-        
         dict_id_og_frames = video_processor.dict_id_og_frames
         dict_id_detected_time_seconds = video_processor.dict_id_detected_time_seconds
         dict_time_ids_xyxy = video_processor.dict_time_ids_xyxy
-        track_list = [dict_id_og_frames, dict_id_detected_time_seconds, dict_time_ids_xyxy]
 
         backgroundframe = video_processor.backgroundframe
         # Extract the base name of the input video file
@@ -91,7 +88,7 @@ def mattingFunction(uploaded_video_path, video_path):
         output_video_path = os.path.join(os.path.dirname(video_path), output_name)
         print(f"output_video_path = {output_video_path}")
         # Call the matting_video function with the modified output video path
-        output_video_path = matting_video(uploaded_video_path, video_path, output_video_path, track_list, dict_id_og_frames, dict_time_ids_xyxy, backgroundframe)
+        output_video_path = matting_video(uploaded_video_path, video_path, output_video_path, dict_id_og_frames, dict_time_ids_xyxy, dict_id_detected_time_seconds, backgroundframe)
 
         return output_video_path
     except ValueError as ve:
@@ -99,7 +96,7 @@ def mattingFunction(uploaded_video_path, video_path):
         print(f"ValueError: {ve}")
         return ve
     except Exception as e:
-        gr.Warning(f"{ve}")
+        gr.Warning(f"{e}")
         print(f"Error in mattingFunction: {e}")
         return "Error during matting."
 

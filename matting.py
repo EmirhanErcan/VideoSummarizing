@@ -5,8 +5,7 @@ import os
 
 model = YOLO('yolov8s-seg.pt')
 
-def matting_video(uploaded_video_path, video_path, output_path, track_list, dict_id_og_frames, dict_time_ids_xyxy, backgroundframe):
-    detected_frame_numbers, detection_times_tracks, bbox_tracks = track_list
+def matting_video(uploaded_video_path, video_path, output_path, dict_id_og_frames, dict_time_ids_xyxy, dict_id_detected_time_seconds, backgroundframe):
     
     # cap open (used for getting frame_width, frame_height and fps)
     cap = cv2.VideoCapture(uploaded_video_path)
@@ -27,7 +26,7 @@ def matting_video(uploaded_video_path, video_path, output_path, track_list, dict
     #-------- black frame oluşturmak başlangıç --------
     videoFrames = []
 
-    max_track_frame_number = max(len(frame_counts) for track_ids, frame_counts in detected_frame_numbers.items())
+    max_track_frame_number = max(len(frame_counts) for track_ids, frame_counts in dict_id_og_frames.items())
 
     for _ in range(max_track_frame_number):
 
@@ -82,14 +81,14 @@ def matting_video(uploaded_video_path, video_path, output_path, track_list, dict
             processed_image = matting(cropped_image)
             if processed_image is None:
                 continue
-            
+
             if x1 > 50 and y1 > 50 and x2 < (frame_width-50) and y2 < (frame_height-50):
                 videoFrames[new_frame][(int(y1-50)):(int(y2+50)), (int(x1-50)):(int(x2+50))] = processed_image
             else:
                 videoFrames[new_frame][y1:y2 , x1:x2] = processed_image # processed_image added to the video frame (black background at first)
             
             
-           
+            
             
     
             
@@ -98,7 +97,6 @@ def matting_video(uploaded_video_path, video_path, output_path, track_list, dict
     #-------- video yazdırma aşaması başlangıç --------
     frame_count = 0
     for frame in videoFrames:
-
         # Load the replacement background image
         background_image = backgroundframe
         background_image = cv2.resize(background_image, (frame.shape[1], frame.shape[0]))
@@ -107,6 +105,22 @@ def matting_video(uploaded_video_path, video_path, output_path, track_list, dict
         background_image[mask == 0] = [0,0,0]
         result = background_image + frame
         # masking uygulanacak
+
+        for track_id, detected_time_seconds in dict_id_detected_time_seconds.items():
+            if len(dict_id_og_frames[track_id]) <= frame_count:
+                continue
+            x1, y1, x2, y2 = dict_time_ids_xyxy[dict_id_og_frames[track_id][frame_count]][track_id]
+
+            
+            hour = int(detected_time_seconds / 3600)
+            minute = int((detected_time_seconds % 3600) / 60)
+            second = int(detected_time_seconds % 60)
+
+            cv2.putText(result, f"Person-{track_id} ({hour}h {minute}m {second}s)",
+                    (int(x1) + 10, int(y1) - 5),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+        
+        
 
         frame_count += 1
         print(f"frame_count = {frame_count}")
