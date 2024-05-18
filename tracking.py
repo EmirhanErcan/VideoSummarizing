@@ -12,7 +12,8 @@ def update_tracker(results, frame, fps, cap, dict_id_color, dict_id_og_frames, d
     og_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     detected_frame_index = cap.get(cv2.CAP_PROP_POS_FRAMES)
     detected_time_seconds = detected_frame_index / fps
-
+    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)) # for crop image restriction
+    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) # for crop image restriction
 
     dict_time_ids_xyxy[detected_frame_index] = {} # CHANGED 08.05.2024 20:25
     
@@ -40,8 +41,14 @@ def update_tracker(results, frame, fps, cap, dict_id_color, dict_id_og_frames, d
         # insan ilk defa algılanıyorsa algılanma zamanını yazıyoruz ve insanın rengini hesaplayıp dictionary içine atıyoruz 
         if track_id not in dict_id_detected_time_seconds: # CHANGED 08.05.2024 19:49
             dict_id_detected_time_seconds[track_id] = detected_time_seconds
-            image = cv2.cvtColor(og_frame.copy(), cv2.COLOR_RGB2BGR)
-            color_text = detect_color(image)
+
+            x1, y1, x2, y2 = bbox
+            if x1 > 50 and y1 > 50 and x2 < (frame_width-50) and y2 < (frame_height-50):
+                cropped_frame = og_frame[(int(y1-50)):(int(y2+50)), (int(x1-50)):(int(x2+50))]
+            else:
+                cropped_frame = og_frame[(int(y1)):(int(y2)), (int(x1)):(int(x2))]
+
+            color_text = detect_color(cv2.cvtColor(cropped_frame, cv2.COLOR_RGB2BGR))
             dict_id_color[track_id] = color_text
         if detected_frame_index not in dict_frame_colors:
             dict_frame_colors[detected_frame_index] = []
@@ -51,7 +58,8 @@ def update_tracker(results, frame, fps, cap, dict_id_color, dict_id_og_frames, d
         color_values = {
             "Blue":(0, 0, 255),
             "Green":(0, 255, 0),
-            "Red":(255, 0, 0)
+            "Red":(255, 0, 0),
+            "Unknown":(0,0,0)
         }
         if len(dict_id_color) > 0:
             rect_color = color_values[dict_id_color[track_id]]

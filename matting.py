@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 import os
 
-model = YOLO('yolov8n-seg.pt')
+model = YOLO('yolov8s-seg.pt')
 
 def matting_video(uploaded_video_path, video_path, output_path, track_list, dict_id_og_frames, dict_time_ids_xyxy, backgroundframe):
     detected_frame_numbers, detection_times_tracks, bbox_tracks = track_list
@@ -51,9 +51,6 @@ def matting_video(uploaded_video_path, video_path, output_path, track_list, dict
         for new_frame in range(len(frames)): # number will be between 1 and max frame sayısı
             count += 1
             
-            print(f"track_id_count {track_id_count}")
-            print(f"count {count}")
-            print(f"new_frame = {new_frame}")
             cap = cv2.VideoCapture(uploaded_video_path)
             original_frame_number = dict_id_og_frames[track_id][new_frame] # frame. indexi veriyoruz ve asıl frame değerine ulaşıyoruz.
             bbox_coordinates = dict_time_ids_xyxy[original_frame_number][track_id] # algılanan original_frame'deki bu track_id'ye ait olan bbox değerini elde ediyoruz
@@ -66,10 +63,6 @@ def matting_video(uploaded_video_path, video_path, output_path, track_list, dict
             y1 = int(y1)
             x2 = int(x2)
             y2 = int(y2)
-            print(f"x1 -> {x1}")
-            print(f"y1 -> {y1}")
-            print(f"x2 -> {x2}")
-            print(f"y2 -> {y2}")
 
             print(f"original_Frame_number = {original_frame_number}")
             cap.set(cv2.CAP_PROP_POS_FRAMES, original_frame_number)
@@ -80,14 +73,21 @@ def matting_video(uploaded_video_path, video_path, output_path, track_list, dict
             if ret is False: 
                 continue
             
-
-            cropped_image = original_image[y1:y2 , x1:x2] #original_frame
+            print(f"original_image.shape = {original_image.shape}")
+            if x1 > 50 and y1 > 50 and x2 < (frame_width-50) and y2 < (frame_height-50):
+                cropped_image = original_image[(int(y1-50)):(int(y2+50)), (int(x1-50)):(int(x2+50))]
+            else:
+                cropped_image = original_image[(int(y1)):(int(y2)), (int(x1)):(int(x2))]
 
             processed_image = matting(cropped_image)
             if processed_image is None:
                 continue
-
-            videoFrames[new_frame][y1:y2 , x1:x2] = processed_image # processed_image added to the video frame (black background at first)
+            
+            if x1 > 50 and y1 > 50 and x2 < (frame_width-50) and y2 < (frame_height-50):
+                videoFrames[new_frame][(int(y1-50)):(int(y2+50)), (int(x1-50)):(int(x2+50))] = processed_image
+            else:
+                videoFrames[new_frame][y1:y2 , x1:x2] = processed_image # processed_image added to the video frame (black background at first)
+            
             
            
             
@@ -121,7 +121,7 @@ def matting_video(uploaded_video_path, video_path, output_path, track_list, dict
 def matting(image):
 
     # Human extraction using a yolo segmentation model 
-    predicts = model(image, save=False, classes=[0], conf=0.1, save_txt=False)
+    predicts = model(image, save=False, classes=[0], conf=0.05, save_txt=False)
     
     extracted_colored_human = None
     

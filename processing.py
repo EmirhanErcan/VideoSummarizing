@@ -19,7 +19,7 @@ import pickle
 
 class VideoProcessor:
     def __init__(self):
-        self.backgroundframe = {}
+        self.backgroundframe = []
         self.total_frames = 0
         self.detected_frame_index = 0
         self.dict_id_color = {}
@@ -49,14 +49,13 @@ class VideoProcessor:
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret:
-                self.backgroundframe = frame
                 return output_video_path
 
             self.detected_frame_index = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
             
 
             if not self.frame_contains_humans(frame):
-                self.backgroundframe[self.detected_frame_index] = frame
+                self.backgroundframe = frame
                 continue
 
             results = detect_objects(frame)
@@ -72,7 +71,10 @@ class VideoProcessor:
         
         
 
-    def frame_contains_humans(self, frame, min_confidence=0.4):
+        
+
+
+    def frame_contains_humans(self, frame, min_confidence=0.65):
         # Detect humans in the frame using your YOLO model
         results = detect_objects(frame, min_confidence)
         

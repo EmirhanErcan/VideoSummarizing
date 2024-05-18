@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 import os
 
-model = YOLO('yolov8n-seg.pt')
+model = YOLO('yolov8x-seg.pt')
 
 def colorFilter(input_video, inputColor, output_path, dict_frame_colors, dict_id_detected_time_seconds, dict_time_ids_xyxy, dict_id_color, dict_id_og_frames):
 
@@ -64,8 +64,9 @@ def colorFilter(input_video, inputColor, output_path, dict_frame_colors, dict_id
 # matrix formatted image
 def detect_color(image):
 
-    predict = model.predict(image, save=False, classes=[0], conf=0.1, save_txt=False)
-     
+    predict = model.predict(image, save=False, classes=[0], conf=0.05, save_txt=False)
+    if predict[0].masks is None:
+        return "Unknown"
     human_mask = (predict[0].masks.data[0].cpu().numpy() * 255).astype("uint8")
     
     human_mask_resized = cv2.resize(human_mask, (image.shape[1], image.shape[0]))
@@ -86,37 +87,22 @@ def detect_color(image):
         ((136, 87, 111), (180, 255, 255))
     ]
 
-    masks = []
-    areas = []
-
     hsv_image = cv2.cvtColor(input_image, cv2.COLOR_BGR2HSV)
-    for lower, upper in color_ranges:
-
-        mask = cv2.inRange(hsv_image, np.array(lower), np.array(upper))
-        
-        masks.append(mask)
-        
-        contours, _ = cv2.findContours(mask.astype(np.uint8), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        
-        total_area = 0
-
-        for contour in contours:
-
-            area = cv2.contourArea(contour)
-
-            total_area += area
-
-        areas.append(total_area)
-
-    max_area_index = areas.index(max(areas))
-
     colors = ['Blue', 'Green', 'Red']
+    pixel_counts = []
+    for lower, upper in color_ranges:
+        mask = cv2.inRange(hsv_image, np.array(lower), np.array(upper))
+        pixel_count = np.sum(mask == 255)  # Count the number of white pixels in the mask
+        pixel_counts.append(pixel_count)
+
+    max_pixel_count_index = pixel_counts.index(max(pixel_counts))
+    dominant_color = colors[max_pixel_count_index]
     
-    max_color = colors[max_area_index]
+    white_pixel_count = np.sum(human_mask_binary == 255)
 
-    color_text = max_color
-
-    return color_text
+    if pixel_counts[max_pixel_count_index] > white_pixel_count/7:
+        return dominant_color
+    return "Unknown"
 
 
 
