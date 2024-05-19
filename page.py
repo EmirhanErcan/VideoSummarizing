@@ -32,32 +32,27 @@ video_files = [file for file in video_files if file.endswith(('.mp4'))]
 # output directory
 output_video_folder = os.path.join(current_dir, "Results")
 
-
-def load_set(progress=gr.Progress()):
-    for i in progress.tqdm(range(video_processor.total_frames)):
-        
-        start = perf_counter() 
-        detected_frame_index = video_processor.detected_frame_index
-        #percent = video_processor.detected_frame_index / video_processor.total_frames 
-        
-        time_interval = 0
-        while True:
-
-            if detected_frame_index < video_processor.detected_frame_index:
-                stop = perf_counter() 
-                time_interval = stop - start
-                break
-        
-        time.sleep(time_interval)
-
-
 # ------------------------
-def gradioApp(video_path):
+def gradioApp(video_path, progress=gr.Progress()):
     try:
         if not video_path:
             raise ValueError("Video path must be provided.")
-        output_video_path = video_processor.process_video(video_path, output_video_folder)
+
+        progress(0, desc="Starting!")
+        time.sleep(1)
+
+        def progress_callback(frame_index, total_frames):
+            progress_percent = (frame_index + 1) / total_frames
+            progress(progress_percent, desc=f"Processing frame {frame_index + 1}/{total_frames}")
+
+        output_video_path = video_processor.process_video(video_path, output_video_folder, progress_callback)
+
+        
         return output_video_path
+
+
+
+    
     except ValueError as ve:
         gr.Warning(f"{ve}")
         print(f"ValueError: {ve}")
@@ -86,7 +81,6 @@ def mattingFunction(uploaded_video_path, video_path):
 
         # Construct the output video path by joining the directory of the input video file with the new output file name
         output_video_path = os.path.join(os.path.dirname(video_path), output_name)
-        print(f"output_video_path = {output_video_path}")
         # Call the matting_video function with the modified output video path
         output_video_path = matting_video(uploaded_video_path, video_path, output_video_path, dict_id_og_frames, dict_time_ids_xyxy, dict_id_detected_time_seconds, backgroundframe)
 
@@ -113,6 +107,8 @@ def colorFilteringFunction(input_video, inputColor):
         dict_time_ids_xyxy = video_processor.dict_time_ids_xyxy
         dict_id_color = video_processor.dict_id_color
         dict_id_og_frames = video_processor.dict_id_og_frames
+
+        
 
         output_video_path = colorFilter(input_video, inputColor, output_video_folder, dict_frame_colors, dict_id_detected_time_seconds, dict_time_ids_xyxy, dict_id_color, dict_id_og_frames)
         return output_video_path
@@ -165,9 +161,6 @@ with gr.Blocks(css= "style.css", js= "myjs.js") as demo:
         with gr.Column():
             btn = gr.Button("Submit")
     with gr.Row():
-        with gr.Column():    
-            percent = gr.Label(label="percent !")
-    with gr.Row():
         with gr.Column():
             outputVideo = gr.Video(label= "Summarized Video", interactive= False)
     with gr.Row():
@@ -185,16 +178,10 @@ with gr.Blocks(css= "style.css", js= "myjs.js") as demo:
     with gr.Row():
         with gr.Column():
             MattingVideo = gr.Video(label= "Matted Video")
-    with gr.Row():
-        with gr.Column():
-            load = gr.Button("Load")
-            label = gr.Label(label="Loader")
     
-    load.click(load_set, outputs=label)
     mattingSubmit.click(mattingFunction, inputs=[u,outputVideo], outputs= MattingVideo)
     u.upload(upload_file, u)
     btn.click(gradioApp, inputs=[u], outputs= outputVideo)
-    #btn.click(load_set, outputs=percent)
     colorSubmit.click(colorFilteringFunction, inputs=[u, radio], outputs=colorFilterVideo) # Değişecek fonksiyon vb
    
 

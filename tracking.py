@@ -5,7 +5,6 @@ from colorFilterFile import detect_color
 import supervision as sv # Byte Track
 
 tracker = sv.ByteTrack()
-model = YOLO("yolov8n.pt")
 
 def update_tracker(results, frame, fps, cap, dict_id_color, dict_id_og_frames, dict_id_detected_time_seconds, dict_time_ids_xyxy, dict_frame_colors):
     
