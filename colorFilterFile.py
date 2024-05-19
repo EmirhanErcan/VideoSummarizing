@@ -5,7 +5,7 @@ import os
 
 model = YOLO('yolov8x-seg.pt')
 
-def colorFilter(input_video, inputColor, output_path, dict_frame_colors, dict_id_detected_time_seconds, dict_time_ids_xyxy, dict_id_color, dict_id_og_frames):
+def colorFilter(input_video, inputColor, output_path, dict_frame_colors, dict_id_detected_time_seconds, dict_time_ids_xyxy, dict_id_color, dict_id_og_frames, total_frames, progress_callback= None):
 
     cap = cv2.VideoCapture(input_video)
     frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -23,25 +23,19 @@ def colorFilter(input_video, inputColor, output_path, dict_frame_colors, dict_id
         "Red":(0, 0, 255)
     }
     rect_color = color_values[inputColor]
-
-    anyColor = True
+    processFrameCounter = 0
+    #anyColor = True
     while cap.isOpened():
         ret, frame = cap.read()
         current_frame_index = cap.get(cv2.CAP_PROP_POS_FRAMES)
         current_frame_color = dict_frame_colors.get(current_frame_index)
         
         if ret == False:
-            if anyColor is False:
-                raise ValueError(f"There is not {inputColor} human in this video")
             return output_video_path
-        
-
-        
         
         
         if current_frame_color is not None:
             if inputColor in current_frame_color:
-
                 for track_id, color in dict_id_color.items():
                     
                     if color == inputColor and (current_frame_index in dict_id_og_frames[track_id]):
@@ -58,8 +52,8 @@ def colorFilter(input_video, inputColor, output_path, dict_frame_colors, dict_id
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, rect_color, 1, cv2.LINE_AA)
 
                 out.write(frame)
-            else:
-                anyColor = False
+        if progress_callback:
+            progress_callback(int(current_frame_index), total_frames)
             
     cap.release()
     out.release()

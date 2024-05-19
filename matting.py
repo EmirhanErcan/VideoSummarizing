@@ -5,7 +5,7 @@ import os
 
 model = YOLO('yolov8s-seg.pt')
 
-def matting_video(uploaded_video_path, video_path, output_path, dict_id_og_frames, dict_time_ids_xyxy, dict_id_detected_time_seconds, backgroundframe):
+def matting_video(uploaded_video_path, video_path, output_path, dict_id_og_frames, dict_time_ids_xyxy, dict_id_detected_time_seconds, backgroundframe, progress_callback=None):
     
     # cap open (used for getting frame_width, frame_height and fps)
     cap = cv2.VideoCapture(uploaded_video_path)
@@ -38,15 +38,15 @@ def matting_video(uploaded_video_path, video_path, output_path, dict_id_og_frame
     # track_id lerin hepsine bakıyor ve en çok kaç karede göründüklerine bakıp en büyüğünü seçiyor
     # Note: videoFrames is fully black now.
 
-
+    total_frames = max_track_frame_number
+    for track_id, frames in dict_id_og_frames.items():
+        total_frames += len(frames)
     
     #-------- black frame oluşturmak bitiş --------
-    count = 0 # kaldırılacak
-    track_id_count = 0 #kaldırılacak
+    count = 0
     #-------- videoFrames üzerine insanları dikiyoruz başlangıç --------
     
     for track_id, frames in dict_id_og_frames.items(): # track_id'yi ve max frame'ini alıyoruz
-        track_id_count += 1
         for new_frame in range(len(frames)): # number will be between 1 and max frame sayısı
             count += 1
             
@@ -86,17 +86,18 @@ def matting_video(uploaded_video_path, video_path, output_path, dict_id_og_frame
                 videoFrames[new_frame][(int(y1-50)):(int(y2+50)), (int(x1-50)):(int(x2+50))] = processed_image
             else:
                 videoFrames[new_frame][y1:y2 , x1:x2] = processed_image # processed_image added to the video frame (black background at first)
-            
+            if progress_callback:
+                progress_callback(count, total_frames)
             
             
             
     
             
     #-------- videoFrames üzerine insanları dikiyoruz bitiş --------
-    
-    #-------- video yazdırma aşaması başlangıç --------
     frame_count = 0
+    #-------- video yazdırma aşaması başlangıç --------
     for frame in videoFrames:
+        count += 1
         # Load the replacement background image
         background_image = backgroundframe
         background_image = cv2.resize(background_image, (frame.shape[1], frame.shape[0]))
@@ -125,6 +126,8 @@ def matting_video(uploaded_video_path, video_path, output_path, dict_id_og_frame
         frame_count += 1
         print(f"frame_count = {frame_count}")
         out.write(result)
+        if progress_callback:
+            progress_callback(count, total_frames)
     #-------- video yazdırma aşaması bitiş --------
     cap.release()
     out.release()

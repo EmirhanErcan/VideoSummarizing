@@ -39,13 +39,13 @@ def gradioApp(video_path, progress=gr.Progress()):
             raise ValueError("Video path must be provided.")
 
         progress(0, desc="Starting!")
-        time.sleep(1)
 
         def progress_callback(frame_index, total_frames):
             progress_percent = (frame_index + 1) / total_frames
             progress(progress_percent, desc=f"Processing frame {frame_index + 1}/{total_frames}")
 
         output_video_path = video_processor.process_video(video_path, output_video_folder, progress_callback)
+        progress(0.05)
 
         
         return output_video_path
@@ -62,7 +62,7 @@ def gradioApp(video_path, progress=gr.Progress()):
 
 # -------------------------------------
 
-def mattingFunction(uploaded_video_path, video_path):
+def mattingFunction(uploaded_video_path, video_path, progress=gr.Progress()):
     try:
         if not uploaded_video_path:
             raise ValueError("PLease upload the video at first.Then, summarize it before matting")
@@ -82,7 +82,15 @@ def mattingFunction(uploaded_video_path, video_path):
         # Construct the output video path by joining the directory of the input video file with the new output file name
         output_video_path = os.path.join(os.path.dirname(video_path), output_name)
         # Call the matting_video function with the modified output video path
-        output_video_path = matting_video(uploaded_video_path, video_path, output_video_path, dict_id_og_frames, dict_time_ids_xyxy, dict_id_detected_time_seconds, backgroundframe)
+
+        progress(0, desc="Starting!")
+
+        def progress_callback(frame_index, total_frames):
+            progress_percent = (frame_index + 1) / total_frames
+            progress(progress_percent, desc=f"Processing frame {frame_index + 1}/{total_frames}")
+
+
+        output_video_path = matting_video(uploaded_video_path, video_path, output_video_path, dict_id_og_frames, dict_time_ids_xyxy, dict_id_detected_time_seconds, backgroundframe, progress_callback)
 
         return output_video_path
     except ValueError as ve:
@@ -96,7 +104,7 @@ def mattingFunction(uploaded_video_path, video_path):
 
 
 
-def colorFilteringFunction(input_video, inputColor):
+def colorFilteringFunction(input_video, inputColor, progress=gr.Progress()):
     try:
         if not input_video:
             raise ValueError("Please Summarize the video first")
@@ -107,10 +115,15 @@ def colorFilteringFunction(input_video, inputColor):
         dict_time_ids_xyxy = video_processor.dict_time_ids_xyxy
         dict_id_color = video_processor.dict_id_color
         dict_id_og_frames = video_processor.dict_id_og_frames
+        total_frames = video_processor.total_frames
 
-        
+        progress(0, desc="Starting!")
 
-        output_video_path = colorFilter(input_video, inputColor, output_video_folder, dict_frame_colors, dict_id_detected_time_seconds, dict_time_ids_xyxy, dict_id_color, dict_id_og_frames)
+        def progress_callback(frame_index, total_frames):
+            progress_percent = (frame_index + 1) / total_frames
+            progress(progress_percent, desc=f"Processing frame {frame_index + 1}/{total_frames}")
+
+        output_video_path = colorFilter(input_video, inputColor, output_video_folder, dict_frame_colors, dict_id_detected_time_seconds, dict_time_ids_xyxy, dict_id_color, dict_id_og_frames, total_frames, progress_callback)
         return output_video_path
     except ValueError as ve:
         gr.Warning(f"{ve}")
