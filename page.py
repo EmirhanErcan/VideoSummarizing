@@ -29,6 +29,7 @@ video_files = [file for file in video_files if file.endswith(('.mp4'))]
 # output directory
 output_video_folder = os.path.join(current_dir, "Results")
 
+
 # ------------------------
 def gradioApp(video_path, progress=gr.Progress()):
     try:
@@ -46,13 +47,12 @@ def gradioApp(video_path, progress=gr.Progress()):
             average = sum(speed_list) / len(speed_list)
 
             result = (average*(total_frames-frame_index))
-            progress(progress_percent, desc=f"Processing frame {frame_index + 1}/{total_frames} Estimated Time Left -> {'{:.2f}'.format(result)}s")
+            progress(progress_percent, desc=f"Estimated Time Left -> {'{:.2f}'.format(result)}s")
 
-        progress(0.05)
         output_video_path = video_processor.process_video(video_path, output_video_folder, progress_callback)
         
+        
         return output_video_path
-
 
     except ValueError as ve:
         gr.Warning(f"{ve}")
@@ -63,7 +63,7 @@ def gradioApp(video_path, progress=gr.Progress()):
 
 # -------------------------------------
 
-def mattingFunction(uploaded_video_path, video_path, progress=gr.Progress()):
+def mattingFunction(uploaded_video_path, video_path, progress=gr.Progress(), progress2=gr.Progress()):
     try:
         if not uploaded_video_path:
             raise ValueError("PLease upload the video at first.Then, summarize it before matting")
@@ -86,12 +86,28 @@ def mattingFunction(uploaded_video_path, video_path, progress=gr.Progress()):
 
         progress(0, desc="Starting!")
 
-        def progress_callback(frame_index, total_frames):
+        speed_list = []
+        def progress_callback(frame_index, total_frames, speed):
             progress_percent = (frame_index + 1) / total_frames
-            progress(progress_percent, desc=f"Processing frame {frame_index + 1}/{total_frames}")
 
+            
+            speed_list.append(speed)
+            average = sum(speed_list) / len(speed_list)
 
-        output_video_path = matting_video(uploaded_video_path, video_path, output_video_path, dict_id_og_frames, dict_time_ids_xyxy, dict_id_detected_time_seconds, backgroundframe, progress_callback)
+            result = (average*(total_frames-frame_index))
+            progress(progress_percent, desc=f"Estimated Time Left -> {'{:.2f}'.format(result)}s")
+
+        def progress_callback_write_video(frame_index, total_frames, speed):
+            progress_percent = (frame_index + 1) / total_frames
+
+            
+            speed_list.append(speed)
+            average = sum(speed_list) / len(speed_list)
+
+            result = (average*(total_frames-frame_index))
+            progress2(progress_percent, desc=f"Estimated Time Left -> {'{:.2f}'.format(result)}s")
+
+        output_video_path = matting_video(uploaded_video_path, video_path, output_video_path, dict_id_og_frames, dict_time_ids_xyxy, dict_id_detected_time_seconds, backgroundframe, progress_callback, progress_callback_write_video)
 
         return output_video_path
     except ValueError as ve:
@@ -120,9 +136,15 @@ def colorFilteringFunction(input_video, inputColor, progress=gr.Progress()):
 
         progress(0, desc="Starting!")
 
-        def progress_callback(frame_index, total_frames):
+        speed_list = []
+        def progress_callback(frame_index, total_frames, speed):
             progress_percent = (frame_index + 1) / total_frames
-            progress(progress_percent, desc=f"Processing frame {frame_index + 1}/{total_frames}")
+            
+            speed_list.append(speed)
+            average = sum(speed_list) / len(speed_list)
+
+            result = (average*(total_frames-frame_index))
+            progress(progress_percent, desc=f"Estimated Time Left -> {'{:.2f}'.format(result)}s")
 
         output_video_path = colorFilter(input_video, inputColor, output_video_folder, dict_frame_colors, dict_id_detected_time_seconds, dict_time_ids_xyxy, dict_id_color, dict_id_og_frames, total_frames, progress_callback)
         return output_video_path

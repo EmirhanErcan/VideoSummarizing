@@ -2,6 +2,7 @@ from ultralytics import YOLO
 import numpy as np
 import cv2
 import os
+import time
 
 model = YOLO('yolov8x-seg.pt')
 
@@ -26,6 +27,7 @@ def colorFilter(input_video, inputColor, output_path, dict_frame_colors, dict_id
     processFrameCounter = 0
     #anyColor = True
     while cap.isOpened():
+        start = time.time()
         ret, frame = cap.read()
         current_frame_index = cap.get(cv2.CAP_PROP_POS_FRAMES)
         current_frame_color = dict_frame_colors.get(current_frame_index)
@@ -53,7 +55,9 @@ def colorFilter(input_video, inputColor, output_path, dict_frame_colors, dict_id
 
                 out.write(frame)
         if progress_callback:
-            progress_callback(int(current_frame_index), total_frames)
+            end = time.time()
+            totalTime = end-start
+            progress_callback(int(current_frame_index), total_frames, totalTime)
             
     cap.release()
     out.release()
@@ -103,7 +107,4 @@ def detect_color(image):
     if pixel_counts[max_pixel_count_index] > white_pixel_count/7:
         return dominant_color
     return "Unknown"
-
-
-
 

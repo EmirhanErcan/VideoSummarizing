@@ -8,14 +8,14 @@
 }
 
 /* the largest div of outputVideo */
-#component-8, #component-18 {
+#component-8, #component-18, #component-24 {
     margin-top: 50px;
     margin-bottom: 50px;
     
 }
 
 /* outputVideo div*/
-#component-10, #component-20 {
+#component-10, #component-20, #component-26 {
     width: 50%;
     margin: 0 auto;
 }
