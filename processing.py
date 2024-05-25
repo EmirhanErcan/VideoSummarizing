@@ -3,7 +3,7 @@ from detection import detect_objects
 from tracking import update_tracker
 import os
 import pickle
-
+import time
 """
 
     Explanations of dictionaries:
@@ -19,7 +19,7 @@ import pickle
 
 class VideoProcessor:
     def __init__(self):
-        self.backgroundframe = []
+        self.backgroundframe = None
         self.total_frames = 0
         self.detected_frame_index = 0
         self.dict_id_color = {}
@@ -48,30 +48,44 @@ class VideoProcessor:
         humanDetector = 0
         while cap.isOpened():
             ret, frame = cap.read()
-            if progress_callback:
-                progress_callback(self.detected_frame_index, self.total_frames)
+            start = time.time()
             
             
+
             if not ret:
+                if self.backgroundframe is None:
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, 0) # 1st index will be background frame
+                    _, first_frame = cap.read()
+                    self.backgroundframe = first_frame
+                    
                 if humanDetector == self.detected_frame_index:
                     raise ValueError("No human detected")
                 return output_video_path
 
             self.detected_frame_index = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
             
-
-            if not self.frame_contains_humans(frame):
-                humanDetector += 1
-                self.backgroundframe = frame
-                continue
-
             results = detect_objects(frame)
             
             if len(results[0].boxes.xyxy) == 0:
+                
+                if self.backgroundframe is None:
+                    self.backgroundframe = frame
+
+                if progress_callback:
+                    end = time.time()
+                    resultTime = end-start
+                    progress_callback(self.detected_frame_index, self.total_frames, resultTime)
                 continue
+
+
             processed_frame = update_tracker(results, frame, fps, cap, self.dict_id_color, self.dict_id_og_frames, self.dict_id_detected_time_seconds, self.dict_time_ids_xyxy, self.dict_frame_colors)
             if processed_frame is not None:
                 out.write(cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB))
+
+            if progress_callback:
+                end = time.time()
+                resultTime = end-start
+                progress_callback(self.detected_frame_index, self.total_frames, resultTime)
             
 
 
@@ -79,19 +93,4 @@ class VideoProcessor:
         cap.release()
         out.release()
         
-        
-
-        
-
-
-    def frame_contains_humans(self, frame, min_confidence=0.65):
-        # Detect humans in the frame using your YOLO model
-        results = detect_objects(frame, min_confidence)
-        
-        for result in results:
-            if len(result.boxes.xyxy) > 0:
-                return True
-        return False
-        
-        
-        
+    

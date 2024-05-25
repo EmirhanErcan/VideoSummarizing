@@ -12,9 +12,6 @@ video_processor = VideoProcessor()
 
 uploaded_videos_count = 0
 
-# bunu colorsubmitin içine falan atarım, eğer None ise hiç çalıştırmaz mesela
-color_texts_in_video = []
-
 # -------- file paths --------d
 
 # Get the current directory
@@ -40,19 +37,23 @@ def gradioApp(video_path, progress=gr.Progress()):
 
         progress(0, desc="Starting!")
 
-        def progress_callback(frame_index, total_frames):
+        speed_list = []
+        def progress_callback(frame_index, total_frames, speed):
             progress_percent = (frame_index + 1) / total_frames
-            progress(progress_percent, desc=f"Processing frame {frame_index + 1}/{total_frames}")
 
-        output_video_path = video_processor.process_video(video_path, output_video_folder, progress_callback)
+            
+            speed_list.append(speed)
+            average = sum(speed_list) / len(speed_list)
+
+            result = (average*(total_frames-frame_index))
+            progress(progress_percent, desc=f"Processing frame {frame_index + 1}/{total_frames} Estimated Time Left -> {'{:.2f}'.format(result)}s")
+
         progress(0.05)
-
+        output_video_path = video_processor.process_video(video_path, output_video_folder, progress_callback)
         
         return output_video_path
 
 
-
-    
     except ValueError as ve:
         gr.Warning(f"{ve}")
         print(f"ValueError: {ve}")
@@ -134,13 +135,14 @@ def colorFilteringFunction(input_video, inputColor, progress=gr.Progress()):
         print(f"Error in colorFilteringFunction: {e}")
         return "Error during color filtering."
 
-def upload_file(filepath):
+def upload_file(filepath, progress=gr.Progress()):
     global uploaded_videos_count
     try:
         # Ensure the file is an MP4 file
         if not filepath.endswith('.mp4'):
             raise ValueError("The uploaded file is not an MP4 file.")
         
+        progress(0, desc="Uploading video...")
         # Define the folder to save the file permanently
         save_folder = "GradioSave"
         
@@ -152,13 +154,15 @@ def upload_file(filepath):
         
         # Copy the user's uploaded file to the target folder
         shutil.copy(filepath, save_path)
+        progress(1, desc="Upload complete!")
+
         
     except ValueError as ve:
-        gr.Warning(str(ve))
+        gr.Warning(f"{ve}")
         print(f"ValueError: {ve}")
         return "Error: The uploaded file must be an MP4 file."
     except Exception as e:
-        gr.Warning("Error while uploading the file")
+        gr.Warning(f"{e}")
         print(f"Error while uploading the file: {e}")
         return "Error during uploading the file."
 
@@ -195,7 +199,7 @@ with gr.Blocks(css= "style.css", js= "myjs.js") as demo:
     mattingSubmit.click(mattingFunction, inputs=[u,outputVideo], outputs= MattingVideo)
     u.upload(upload_file, u)
     btn.click(gradioApp, inputs=[u], outputs= outputVideo)
-    colorSubmit.click(colorFilteringFunction, inputs=[u, radio], outputs=colorFilterVideo) # Değişecek fonksiyon vb
+    colorSubmit.click(colorFilteringFunction, inputs=[u, radio], outputs=colorFilterVideo)
    
 
 demo.launch(share=True)
