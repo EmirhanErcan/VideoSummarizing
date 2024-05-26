@@ -2,10 +2,11 @@ from ultralytics import YOLO
 import numpy as np
 import cv2
 import os
+import time
 
 model = YOLO('yolov8s-seg.pt')
 
-def matting_video(uploaded_video_path, video_path, output_path, dict_id_og_frames, dict_time_ids_xyxy, dict_id_detected_time_seconds, backgroundframe, progress_callback=None):
+def matting_video(uploaded_video_path, output_path, dict_id_og_frames, dict_time_ids_xyxy, dict_id_detected_time_seconds, backgroundframe, progress_callback=None, progress_callback_write_video=None):
     
     # cap open (used for getting frame_width, frame_height and fps)
     cap = cv2.VideoCapture(uploaded_video_path)
@@ -19,14 +20,6 @@ def matting_video(uploaded_video_path, video_path, output_path, dict_id_og_frame
     output_video_path = output_path
     out = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height))
     
-    # insanları tek tek işleme kısmı var
-    # video yazdırma işlemi var
-    
-    
-
-    
-    
-
     #-------- black frame oluşturmak başlangıç --------
     videoFrames = []
 
@@ -42,7 +35,7 @@ def matting_video(uploaded_video_path, video_path, output_path, dict_id_og_frame
     # track_id lerin hepsine bakıyor ve en çok kaç karede göründüklerine bakıp en büyüğünü seçiyor
     # Note: videoFrames is fully black now.
 
-    total_frames = max_track_frame_number
+    total_frames = 0
     for track_id, frames in dict_id_og_frames.items():
         total_frames += len(frames)
     
@@ -51,17 +44,19 @@ def matting_video(uploaded_video_path, video_path, output_path, dict_id_og_frame
     #-------- videoFrames üzerine insanları dikiyoruz başlangıç --------
     
     for track_id, frames in dict_id_og_frames.items(): # track_id'yi ve max frame'ini alıyoruz
-        for new_frame in range(len(frames)): # number will be between 1 and max frame sayısı
+        for new_frame in range(len(frames)): # number will be between 1 and max frame sayısı6+++
             count += 1
+            start = time.time()
 
-            if progress_callback:
-                progress_callback(count, total_frames)
-            
             cap = cv2.VideoCapture(uploaded_video_path)
             original_frame_number = dict_id_og_frames[track_id][new_frame] # frame. indexi veriyoruz ve asıl frame değerine ulaşıyoruz.
             bbox_coordinates = dict_time_ids_xyxy[original_frame_number][track_id] # algılanan original_frame'deki bu track_id'ye ait olan bbox değerini elde ediyoruz
 
             if len(bbox_coordinates) == 0:
+                if progress_callback:
+                    end = time.time()
+                    totalTime = end-start
+                    progress_callback(count, total_frames, totalTime)
                 continue
             # for making it suitable with bigger frame, x * og_frame_width
             x1, y1, x2, y2 = bbox_coordinates
@@ -77,35 +72,56 @@ def matting_video(uploaded_video_path, video_path, output_path, dict_id_og_frame
 
             
             if ret is False: 
+                if progress_callback:
+                    end = time.time()
+                    totalTime = end-start
+                    progress_callback(count, total_frames, totalTime)
                 continue
             
             print(f"original_image.shape = {original_image.shape}")
             if x1 > 50 and y1 > 50 and x2 < (frame_width-50) and y2 < (frame_height-50):
                 cropped_image = original_image[(int(y1-50)):(int(y2+50)), (int(x1-50)):(int(x2+50))]
+                processed_image = matting(cropped_image)
+                if processed_image is None:
+                    if progress_callback:
+                        end = time.time()
+                        totalTime = end-start
+                        progress_callback(count, total_frames, totalTime)
+                    continue
+                height, width = processed_image.shape[:2]
+                #crop the processed image again:
+                processed_image = processed_image[50:height-50, 50:width-50]
             else:
                 cropped_image = original_image[(int(y1)):(int(y2)), (int(x1)):(int(x2))]
+                processed_image = matting(cropped_image)
 
-            processed_image = matting(cropped_image)
+
             if processed_image is None:
+                if progress_callback:
+                    end = time.time()
+                    totalTime = end-start
+                    progress_callback(count, total_frames, totalTime)
                 continue
+            
+            videoFrames[new_frame][y1:y2 , x1:x2] = processed_image
+            if progress_callback:
+                end = time.time()
+                totalTime = end-start
+                progress_callback(count, total_frames, totalTime)
+            
 
-            if x1 > 50 and y1 > 50 and x2 < (frame_width-50) and y2 < (frame_height-50):
-                videoFrames[new_frame][(int(y1-50)):(int(y2+50)), (int(x1-50)):(int(x2+50))] = processed_image
-            else:
-                videoFrames[new_frame][y1:y2 , x1:x2] = processed_image # processed_image added to the video frame (black background at first)
-            
-            
-            
-            
-    
-            
     #-------- videoFrames üzerine insanları dikiyoruz bitiş --------
     frame_count = 0
+    count = 0
+    total_frames = max_track_frame_number
     #-------- video yazdırma aşaması başlangıç --------
     for frame in videoFrames:
+        start = time.time()
         count += 1
-        if progress_callback:
-            progress_callback(count, total_frames)
+        if progress_callback_write_video:
+            end = time.time()
+            totalTime = end-start
+            progress_callback_write_video(count, total_frames, totalTime)
         # Load the replacement background image
         background_image = backgroundframe
         background_image = cv2.resize(background_image, (frame.shape[1], frame.shape[0]))
@@ -117,6 +133,10 @@ def matting_video(uploaded_video_path, video_path, output_path, dict_id_og_frame
 
         for track_id, detected_time_seconds in dict_id_detected_time_seconds.items():
             if len(dict_id_og_frames[track_id]) <= frame_count:
+                if progress_callback_write_video:
+                    end = time.time()
+                    totalTime = end-start
+                    progress_callback_write_video(count, total_frames, totalTime)
                 continue
             x1, y1, x2, y2 = dict_time_ids_xyxy[dict_id_og_frames[track_id][frame_count]][track_id]
 
@@ -129,7 +149,10 @@ def matting_video(uploaded_video_path, video_path, output_path, dict_id_og_frame
                     (int(x1) + 10, int(y1) - 5),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
         
-        
+        if progress_callback_write_video:
+            end = time.time()
+            totalTime = end-start
+            progress_callback_write_video(count, total_frames, totalTime)
 
         frame_count += 1
         print(f"frame_count = {frame_count}")
@@ -180,4 +203,5 @@ def matting(image):
     if extracted_colored_human is None:
         return None
     return extracted_colored_human
+
     

@@ -107,7 +107,7 @@ def mattingFunction(uploaded_video_path, video_path, progress=gr.Progress(), pro
             result = (average*(total_frames-frame_index))
             progress2(progress_percent, desc=f"Estimated Time Left -> {'{:.2f}'.format(result)}s")
 
-        output_video_path = matting_video(uploaded_video_path, video_path, output_video_path, dict_id_og_frames, dict_time_ids_xyxy, dict_id_detected_time_seconds, backgroundframe, progress_callback, progress_callback_write_video)
+        output_video_path = matting_video(uploaded_video_path, output_video_path, dict_id_og_frames, dict_time_ids_xyxy, dict_id_detected_time_seconds, backgroundframe, progress_callback, progress_callback_write_video)
 
         return output_video_path
     except ValueError as ve:
